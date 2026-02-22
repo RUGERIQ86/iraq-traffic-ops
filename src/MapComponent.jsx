@@ -83,10 +83,11 @@ const TrafficLayer = () => {
 
   useEffect(() => {
     // Initial Traffic Layer
-    const googleTrafficUrl = 'https://mt1.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}';
+    const googleTrafficUrl = 'https://mt{s}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}';
     
     trafficLayerRef.current = L.tileLayer(googleTrafficUrl, {
       maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
       attribution: 'Traffic Data by Google'
     }).addTo(map);
 
@@ -94,7 +95,9 @@ const TrafficLayer = () => {
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        const newUrl = `https://mt1.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}`;
+        // Use a random subdomain for refresh to avoid caching issues
+        const sub = Math.floor(Math.random() * 4);
+        const newUrl = `https://mt${sub}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}`;
         console.log("Refreshing Traffic Layer...", timestamp);
         trafficLayerRef.current.setUrl(newUrl);
       }
@@ -265,10 +268,14 @@ const MapComponent = ({ session }) => {
         setStatusMsg('TARGET LOCKED');
       },
       (err) => {
-        console.error(err);
-        setStatusMsg('ERR: SIGNAL_LOST');
+        console.error("Geolocation Error:", err);
+        if (err.code === 1 && window.location.protocol !== 'https:') {
+             setStatusMsg('ERR: HTTPS_REQUIRED');
+        } else {
+             setStatusMsg('ERR: SIGNAL_LOST');
+        }
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 

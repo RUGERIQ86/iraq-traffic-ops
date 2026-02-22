@@ -1,13 +1,13 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import basicSsl from '@vitejs/plugin-basic-ssl'
+// import basicSsl from '@vitejs/plugin-basic-ssl'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    basicSsl(),
+    // basicSsl(),
     // VitePWA({
     //   registerType: 'autoUpdate',
     //   includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
@@ -44,7 +44,7 @@ export default defineConfig({
   ],
   server: {
     host: true, // Allow network access (e.g. from phone)
-    https: true // Enable HTTPS for Geolocation API
+    // https: true // Enable HTTPS for Geolocation API
   },
   resolve: {
     alias: {
