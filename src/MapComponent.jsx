@@ -504,10 +504,6 @@ const MapComponent = ({ session }) => {
         {Object.entries(squadMembers).map(([id, data]) => {
             // Check if member is online (updated in last 2 minutes)
             const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
-            // Show all members regardless of time
-            // const isMemberVisible = (new Date() - new Date(data.lastUpdate)) < 3600000;
-
-            // if (!isMemberVisible) return null;
 
             const distance = userLocation 
                  ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
@@ -539,8 +535,8 @@ const MapComponent = ({ session }) => {
                     </div>
                   </Popup>
                 </Marker>
-                {/* Show Squad Route if available */}
-                {data.route_path && (
+                {/* Show Squad Route if available AND Online */}
+                {data.route_path && isMemberOnline && (
                     <Polyline 
                         positions={data.route_path}
                         pathOptions={{ color: '#ffffff', weight: 2, dashArray: '5, 10', opacity: 0.7 }}
@@ -621,13 +617,6 @@ const MapComponent = ({ session }) => {
                   onClick={() => setIsTargetMode(!isTargetMode)}
               >
                   {isTargetMode ? 'CANCEL TARGET' : 'SET TARGET'}
-              </button>
-
-              <button 
-                  className="toolbar-btn"
-                  onClick={() => setShowLinkModal(true)}
-              >
-                  LINK UNIT
               </button>
 
               <button 
