@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip, useM
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from './supabaseClient';
+import ChatComponent from './ChatComponent';
 
 // Fix for default marker icon in React-Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -609,6 +610,9 @@ const MapComponent = ({ session }) => {
           
           {/* Center Crosshair (Hidden in Target Mode) */}
           {!isTargetMode && <div className="crosshair"></div>}
+
+          {/* Chat Component */}
+          {myUnitId && <ChatComponent myUnitId={myUnitId} />}
       </div>
     </div>
   );
