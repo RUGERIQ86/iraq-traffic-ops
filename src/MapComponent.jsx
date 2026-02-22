@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from './supabaseClient';
@@ -40,6 +40,22 @@ const squadIcon = L.divIcon({
   iconSize: [30, 30],
   iconAnchor: [15, 15]
 });
+
+// Calculate distance between two points in meters
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371e3; // Earth radius in meters
+  const φ1 = lat1 * Math.PI / 180;
+  const φ2 = lat2 * Math.PI / 180;
+  const Δφ = (lat2 - lat1) * Math.PI / 180;
+  const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+  const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+            Math.cos(φ1) * Math.cos(φ2) *
+            Math.sin(Δλ/2) * Math.sin(Δλ/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+  return Math.round(R * c); // Distance in meters
+};
 
 // Component to handle traffic updates
 const TrafficLayer = () => {
@@ -244,19 +260,41 @@ const MapComponent = ({ session }) => {
           </Marker>
         )}
 
-        {/* Squad Markers */}
-        {Object.entries(squadMembers).map(([id, data]) => (
-            <Marker key={id} position={[data.lat, data.lng]} icon={squadIcon}>
-                <Popup>
-                    <div className="hacker-popup" style={{borderColor: '#00ff00'}}>
-                        <h3 style={{color: '#00ff00', borderColor: '#00ff00'}}>UNIT: {id}</h3>
-                        <p>STATUS: LINKED</p>
-                        <p>LAT: {data.lat.toFixed(4)}</p>
-                        <p>LNG: {data.lng.toFixed(4)}</p>
-                    </div>
-                </Popup>
-            </Marker>
-        ))}
+        {/* Squad Markers & Tactical Lines */}
+        {Object.entries(squadMembers).map(([id, data]) => {
+            const distance = userLocation 
+                ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
+                : 0;
+            
+            return (
+                <div key={id}>
+                    {/* Tactical Line */}
+                    {userLocation && (
+                        <Polyline 
+                            positions={[userLocation, [data.lat, data.lng]]}
+                            pathOptions={{ color: '#00ff00', weight: 1, dashArray: '5, 10', opacity: 0.6 }}
+                        >
+                            <Tooltip permanent direction="center" className="tactical-tooltip">
+                                {id} | {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
+                            </Tooltip>
+                        </Polyline>
+                    )}
+
+                    {/* Squad Marker */}
+                    <Marker position={[data.lat, data.lng]} icon={squadIcon}>
+                        <Popup>
+                            <div className="hacker-popup" style={{borderColor: '#00ff00'}}>
+                                <h3 style={{color: '#00ff00', borderColor: '#00ff00'}}>UNIT: {id}</h3>
+                                <p>STATUS: LINKED</p>
+                                <p>DIST: {distance}m</p>
+                                <p>LAT: {data.lat.toFixed(4)}</p>
+                                <p>LNG: {data.lng.toFixed(4)}</p>
+                            </div>
+                        </Popup>
+                    </Marker>
+                </div>
+            );
+        })}
 
         {/* Default Baghdad Marker (only if user location not set yet) */}
         {!userLocation && (
