@@ -1,134 +1,155 @@
-:root {
-  --main-color: #0f0;
-  --bg-color: #000;
-  --dim-color: #003300;
-  --alert-color: #ff0000;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--bg-color);
-  color: var(--main-color);
+/* Login Styles */
+.login-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  width: 100vw;
+  background-color: #000;
+  color: #00ff00;
   font-family: 'Courier New', Courier, monospace;
+  position: relative;
   overflow: hidden;
 }
 
-.map-wrapper {
+.login-box {
+  background: rgba(0, 20, 0, 0.8);
+  border: 2px solid #00ff00;
+  padding: 40px;
+  width: 350px;
+  z-index: 10;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
   position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden; /* Ensure radar doesn't cause scrollbars */
 }
 
-/* Leaflet Map Filter - The "Night Vision" Effect */
-.leaflet-container {
-  width: 100%;
-  height: 100%;
-  background: #000 !important;
-  filter: invert(100%) hue-rotate(100deg) contrast(1.5) brightness(0.8) !important;
-  z-index: 1;
-}
-
-/* HUD Overlay */
-.hud-overlay {
+.login-box::before {
+  content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 10;
-  box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.2);
-  border: 2px solid var(--dim-color);
+  top: -2px;
+  left: -2px;
+  width: 20px;
+  height: 20px;
+  border-top: 2px solid #00ff00;
+  border-left: 2px solid #00ff00;
 }
 
-.top-left, .top-right, .bottom-left, .bottom-right {
+.login-box::after {
+  content: '';
   position: absolute;
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid var(--main-color);
-  font-size: 14px;
+  bottom: -2px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
+  border-bottom: 2px solid #00ff00;
+  border-right: 2px solid #00ff00;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 10px;
+}
+
+.login-header h2 {
+  margin: 0;
+  font-size: 24px;
   letter-spacing: 2px;
-  text-shadow: 0 0 5px var(--main-color);
-  pointer-events: auto;
 }
 
-.top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
-.top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; text-align: right; }
-.bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
-.bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; text-align: right; }
-
-/* Crosshair in center */
-.crosshair {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 40px;
-    height: 40px;
-    border: 1px solid rgba(0, 255, 0, 0.5);
-    transform: translate(-50%, -50%);
-    pointer-events: none;
-    z-index: 11;
-}
-.crosshair::before, .crosshair::after {
-    content: '';
-    position: absolute;
-    background: var(--main-color);
-}
-.crosshair::before { top: 50%; left: 0; width: 100%; height: 1px; }
-.crosshair::after { left: 50%; top: 0; height: 100%; width: 1px; }
-
-/* CRT Scanline Effect */
-.scanline {
-  width: 100%;
-  height: 100px;
-  z-index: 10;
-  background: linear-gradient(0deg, rgba(0,0,0,0) 0%, rgba(0, 255, 0, 0.1) 50%, rgba(0,0,0,0) 100%);
-  opacity: 0.1;
-  position: absolute;
-  bottom: 100%;
-  animation: scanline 8s linear infinite;
-  pointer-events: none;
+.login-header p {
+  margin: 5px 0 0;
+  font-size: 10px;
+  color: #00aa00;
 }
 
-@keyframes scanline {
-  0% { bottom: 100%; }
-  100% { bottom: -100%; }
+.input-group {
+  margin-bottom: 20px;
 }
 
-/* Vignette */
-.vignette {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  box-shadow: 0 0 150px rgba(0,0,0,0.9) inset;
-  pointer-events: none;
-  z-index: 9;
-}
-
-/* Popup Styling */
-.leaflet-popup-content-wrapper, .leaflet-popup-tip {
-  background: #000 !important;
-  color: var(--main-color) !important;
-  border: 1px solid var(--main-color);
-  border-radius: 0 !important;
-  box-shadow: 0 0 10px var(--main-color);
-}
-
-.hacker-popup h3 {
-  margin: 0 0 5px 0;
-  border-bottom: 1px dashed var(--main-color);
-}
-
-.hacker-popup p {
-  margin: 2px 0;
+.input-group label {
+  display: block;
   font-size: 12px;
+  margin-bottom: 5px;
+  color: #00aa00;
 }
 
-/* --- MILITARY USER MARKER (Radiation Style) --- */
+.input-group input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid #005500;
+  color: #00ff00;
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.input-group input:focus {
+  border-color: #00ff00;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
+}
+
+.login-btn {
+  width: 100%;
+  background: #003300;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  padding: 15px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.login-btn:hover {
+  background: #00ff00;
+  color: #000;
+  box-shadow: 0 0 15px #00ff00;
+}
+
+.login-btn:disabled {
+  background: #333;
+  border-color: #555;
+  color: #888;
+  cursor: not-allowed;
+}
+
+.error-msg {
+  color: #ff0000;
+  font-size: 12px;
+  margin-bottom: 15px;
+  text-align: center;
+  border: 1px solid #ff0000;
+  padding: 5px;
+  background: rgba(50, 0, 0, 0.5);
+}
+
+.login-footer {
+  margin-top: 30px;
+  text-align: center;
+  font-size: 10px;
+  color: #005500;
+  border-top: 1px solid #003300;
+  padding-top: 10px;
+}
+
+.loading-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: #000;
+  color: #00ff00;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 20px;
+  letter-spacing: 2px;
+}
+
+/* Existing Styles... */
 .military-user-marker {
   background: transparent;
   display: flex;
@@ -182,43 +203,51 @@ body {
   }
 }
 
-/* Locate Button */
-.locate-btn {
+/* Squad Marker Styles */
+.squad-marker {
+  background: transparent;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.squad-core {
+  width: 10px;
+  height: 10px;
+  background-color: #00ff00;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00ff00;
+  position: relative;
+  z-index: 2;
+}
+
+.squad-ring {
   position: absolute;
-  bottom: 100px;
-  right: 20px;
-  z-index: 100;
-  background: #000;
-  border: 1px solid var(--alert-color);
-  color: var(--alert-color);
-  padding: 10px 20px;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  cursor: pointer;
-  text-transform: uppercase;
-  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-  transition: all 0.3s;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid #00ff00;
+  border-radius: 50%;
+  animation: squad-pulse 1.5s infinite ease-in-out;
 }
 
-.locate-btn:hover {
-  background: var(--alert-color);
-  color: #000;
-  box-shadow: 0 0 20px var(--alert-color);
+@keyframes squad-pulse {
+  0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
+  50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.5; }
 }
 
-.locate-btn:active {
-  transform: scale(0.95);
-}
-
-/* --- RADAR SWEEP EFFECT --- */
+/* Radar Overlay */
 .radar-container {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 150vmax; /* Make it huge to cover everything */
+  width: 150vmax;
   height: 150vmax;
-  pointer-events: none; /* Click-through */
+  pointer-events: none;
   z-index: 5; /* Above map, below HUD */
   opacity: 0.4;
 }
@@ -256,4 +285,163 @@ body {
 @keyframes radar-spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+:root {
+  --hud-color: #00ff00;
+  --bg-color: #0a0a0a;
+  --alert-color: #ff0000;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-color);
+  color: var(--hud-color);
+  font-family: 'Courier New', Courier, monospace;
+  overflow: hidden;
+}
+
+.map-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+.leaflet-map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  /* Dark Mode with slight military tint, preserving traffic colors */
+  filter: invert(100%) hue-rotate(180deg) brightness(0.95) contrast(90%);
+}
+
+/* HUD Overlay */
+.hud-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: inset 0 0 100px rgba(0, 255, 0, 0.2);
+}
+
+.top-left, .top-right, .bottom-left, .bottom-right {
+  position: absolute;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--hud-color);
+  font-size: 14px;
+  text-shadow: 0 0 5px var(--hud-color);
+}
+
+.top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+.top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; text-align: right; }
+.bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+.bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; text-align: right; }
+
+/* Crosshair */
+.crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translate(-50%, -50%);
+  border: 2px solid var(--hud-color);
+  border-radius: 50%;
+}
+
+.crosshair::before, .crosshair::after {
+  content: '';
+  position: absolute;
+  background: var(--hud-color);
+}
+
+.crosshair::before { top: 50%; left: -10px; width: 60px; height: 1px; }
+.crosshair::after { left: 50%; top: -10px; height: 60px; width: 1px; }
+
+/* Scanline Effect */
+.scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(0,255,0,0), rgba(0,255,0,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 11;
+  opacity: 0.3;
+}
+
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, transparent 50%, black 150%);
+  pointer-events: none;
+  z-index: 12;
+}
+
+/* Locate Button */
+.locate-btn {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.8);
+  color: var(--alert-color);
+  border: 1px solid var(--alert-color);
+  padding: 10px 20px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: all 0.3s;
+  text-shadow: 0 0 5px var(--alert-color);
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
+}
+
+.locate-btn:hover {
+  background: var(--alert-color);
+  color: black;
+  box-shadow: 0 0 20px var(--alert-color);
+}
+
+/* Hacker Popup */
+.hacker-popup {
+  background: black;
+  color: var(--hud-color);
+  border: 1px solid var(--hud-color);
+  padding: 5px;
+  font-family: 'Courier New', Courier, monospace;
+  text-align: center;
+}
+
+.hacker-popup h3 {
+  margin: 0 0 5px 0;
+  border-bottom: 1px solid var(--hud-color);
+  font-size: 14px;
+}
+
+.hacker-popup p {
+  margin: 2px 0;
+  font-size: 12px;
+}
+
+/* Leaflet Popup Override */
+.leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-tip {
+  background: black !important;
+  border: 1px solid var(--hud-color) !important;
 }

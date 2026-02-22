@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.97.0",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.18.1",
     "react": "^19.2.0",

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { supabase } from './supabaseClient';
 
 // Fix for default marker icon in React-Leaflet
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -16,7 +17,7 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom Military Icon (Red Radiation)
+// Custom Military Icon (Red Radiation) - User
 const militaryIcon = L.divIcon({
   className: 'military-user-marker',
   html: `
@@ -27,6 +28,17 @@ const militaryIcon = L.divIcon({
   `,
   iconSize: [40, 40],
   iconAnchor: [20, 20]
+});
+
+// Custom Squad Icon (Blue/Green Tactical) - Friend
+const squadIcon = L.divIcon({
+  className: 'squad-marker',
+  html: `
+    <div class="squad-core" style="background-color: #00ff00; box-shadow: 0 0 10px #00ff00;"></div>
+    <div class="squad-ring" style="border-color: #00ff00;"></div>
+  `,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15]
 });
 
 // Component to handle traffic updates
@@ -78,14 +90,30 @@ const MapFlyTo = ({ position }) => {
   return null;
 };
 
-const MapComponent = () => {
+const MapComponent = ({ session }) => {
   // Default: Baghdad Coordinates
   const [position, setPosition] = useState([33.3152, 44.3661]);
   const [userLocation, setUserLocation] = useState(null);
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [randomCode, setRandomCode] = useState('INIT...');
   const [statusMsg, setStatusMsg] = useState('SYSTEM READY');
+  
+  // Multi-user State
+  const [myUnitId, setMyUnitId] = useState('');
+  const [targetIdInput, setTargetIdInput] = useState('');
+  const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate } }
+  const [isOnline, setIsOnline] = useState(false);
 
+  // Use Email as Unit ID (or part of it)
+  useEffect(() => {
+    if (session?.user?.email) {
+        // Use the part before @ as the ID for simplicity
+        const emailId = session.user.email.split('@')[0].toUpperCase();
+        setMyUnitId(emailId);
+    }
+  }, [session]);
+
+  // Timer for HUD
   useEffect(() => {
     const timer = setInterval(() => {
       setTime(new Date().toLocaleTimeString());
@@ -98,6 +126,57 @@ const MapComponent = () => {
   useEffect(() => {
     handleLocateMe();
   }, []);
+
+  // Real-time Location Sync Logic
+  useEffect(() => {
+    if (!userLocation || !supabase || !myUnitId) return;
+
+    const syncLocation = async () => {
+      try {
+        const { error } = await supabase
+          .from('locations')
+          .upsert({ 
+            unit_id: myUnitId, 
+            lat: userLocation[0], 
+            lng: userLocation[1],
+            last_updated: new Date().toISOString()
+          });
+        
+        if (error) console.error('Sync Error:', error);
+        else setIsOnline(true);
+      } catch (err) {
+        console.error('Sync Exception:', err);
+        setIsOnline(false);
+      }
+    };
+
+    // Sync immediately then every 10 seconds
+    syncLocation();
+    const interval = setInterval(syncLocation, 10000);
+    return () => clearInterval(interval);
+  }, [userLocation, myUnitId]);
+
+  // Subscribe to Squad Updates
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('public:locations')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'locations' }, (payload) => {
+        const { unit_id, lat, lng } = payload.new;
+        if (unit_id !== myUnitId) {
+            setSquadMembers(prev => ({
+                ...prev,
+                [unit_id]: { lat, lng, lastUpdate: new Date() }
+            }));
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [myUnitId]);
 
   const handleLocateMe = () => {
     setStatusMsg('ACQUIRING TARGET...');
@@ -122,6 +201,29 @@ const MapComponent = () => {
     );
   };
 
+  const handleAddTarget = () => {
+    if (!targetIdInput) return;
+    // In a real app, we would verify the ID exists.
+    // For now, we just add it to our "watch list" visually
+    setStatusMsg(`LINKING TO UNIT: ${targetIdInput}...`);
+    setTimeout(() => {
+        setStatusMsg(`LINK ESTABLISHED: ${targetIdInput}`);
+        // Simulate finding them for demo purposes if no backend
+        if (!supabase) {
+            const demoLat = userLocation ? userLocation[0] + 0.005 : 33.3200;
+            const demoLng = userLocation ? userLocation[1] + 0.005 : 44.3700;
+            setSquadMembers(prev => ({
+                ...prev,
+                [targetIdInput]: { lat: demoLat, lng: demoLng, lastUpdate: new Date() }
+            }));
+        }
+    }, 1500);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
     <div className="map-wrapper">
       <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-map">
@@ -133,14 +235,28 @@ const MapComponent = () => {
           <Marker position={userLocation} icon={militaryIcon}>
             <Popup>
               <div className="hacker-popup">
-                <h3 style={{color: 'red', borderColor: 'red'}}>YOUR LOCATION</h3>
-                <p>STATUS: DETECTED</p>
+                <h3 style={{color: 'red', borderColor: 'red'}}>MY UNIT: {myUnitId}</h3>
+                <p>STATUS: ONLINE</p>
                 <p>LAT: {userLocation[0].toFixed(4)}</p>
                 <p>LNG: {userLocation[1].toFixed(4)}</p>
               </div>
             </Popup>
           </Marker>
         )}
+
+        {/* Squad Markers */}
+        {Object.entries(squadMembers).map(([id, data]) => (
+            <Marker key={id} position={[data.lat, data.lng]} icon={squadIcon}>
+                <Popup>
+                    <div className="hacker-popup" style={{borderColor: '#00ff00'}}>
+                        <h3 style={{color: '#00ff00', borderColor: '#00ff00'}}>UNIT: {id}</h3>
+                        <p>STATUS: LINKED</p>
+                        <p>LAT: {data.lat.toFixed(4)}</p>
+                        <p>LNG: {data.lng.toFixed(4)}</p>
+                    </div>
+                </Popup>
+            </Marker>
+        ))}
 
         {/* Default Baghdad Marker (only if user location not set yet) */}
         {!userLocation && (
@@ -169,17 +285,64 @@ const MapComponent = () => {
       {/* HUD Interface */}
       <div className="hud-overlay">
         <div className="top-left">
-            <div>SYS.OP: ONLINE</div>
-            <div>T: {time}</div>
+            <div>SYS.OP: {isOnline ? 'CONNECTED' : 'OFFLINE'}</div>
+            <div>UNIT_ID: <span style={{color: '#00ff00', fontWeight: 'bold'}}>{myUnitId}</span></div>
         </div>
         <div className="top-right">
-            <div>LOC: {userLocation ? 'USER_SECURE' : 'IRAQ_SEC_01'}</div>
-            <div>SAT_LINK: ACTIVE</div>
+            <div>LOC: {userLocation ? 'SECURE' : 'SEARCHING...'}</div>
+            <div>SQUAD: {Object.keys(squadMembers).length} UNITS</div>
+            <button 
+                onClick={handleLogout}
+                style={{
+                    background: 'transparent',
+                    border: '1px solid red',
+                    color: 'red',
+                    fontSize: '10px',
+                    marginTop: '5px',
+                    cursor: 'pointer'
+                }}
+            >
+                [ TERMINATE SESSION ]
+            </button>
         </div>
-        <div className="bottom-left">
-            <div>STATUS: {statusMsg}</div>
-            <div>PKT: {randomCode}</div>
+        
+        {/* Squad Link Panel (Bottom Left) */}
+        <div className="bottom-left" style={{pointerEvents: 'auto'}}>
+            <div style={{marginBottom: '5px'}}>LINK NEW UNIT:</div>
+            <div style={{display: 'flex', gap: '5px'}}>
+                <input 
+                    type="text" 
+                    value={targetIdInput}
+                    onChange={(e) => setTargetIdInput(e.target.value)}
+                    placeholder="ENTER UNIT ID"
+                    style={{
+                        background: 'rgba(0,0,0,0.7)',
+                        border: '1px solid #00ff00',
+                        color: '#00ff00',
+                        padding: '5px',
+                        fontFamily: 'monospace',
+                        width: '120px'
+                    }}
+                />
+                <button 
+                    onClick={handleAddTarget}
+                    style={{
+                        background: '#00ff00',
+                        color: 'black',
+                        border: 'none',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        padding: '5px 10px'
+                    }}
+                >
+                    LINK
+                </button>
+            </div>
+            <div style={{fontSize: '10px', marginTop: '5px', color: '#aaa'}}>
+                STATUS: {statusMsg}
+            </div>
         </div>
+
         <div className="bottom-right">
             <div>ENC: AES-256</div>
             <div>SEC_LEVEL: 5</div>
@@ -190,7 +353,7 @@ const MapComponent = () => {
 
         {/* Locate Button */}
         <button className="locate-btn" onClick={handleLocateMe}>
-            [ ACQUIRE TARGET ]
+            [ RE-ACQUIRE TARGET ]
         </button>
       </div>
     </div>
