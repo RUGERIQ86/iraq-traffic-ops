@@ -114,22 +114,20 @@ const ChatComponent = ({ myUnitId }) => {
         className={`chat-toggle-btn ${hasUnread ? 'unread-pulse' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
       >
-        {isOpen ? '[ CLOSE COMMS ]' : `[ CHAT ${hasUnread ? '(!)' : ''} ]`}
+        {isOpen ? '[ CLOSE ]' : `[ CHAT ${hasUnread ? '(!)' : ''} ]`}
       </button>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="chat-window">
-          <div className="chat-header">
-            <h3>SECURE CHANNEL</h3>
-            <div className="live-indicator"></div>
-          </div>
-          
+        <div className="chat-container">
           <div className="chat-messages">
             {messages.map((msg, index) => (
-              <div key={index} className={`message-bubble ${msg.unit_id === myUnitId ? 'my-message' : ''}`}>
-                <div className="message-meta" style={{ color: msg.color || getUserColor(msg.unit_id) }}>
-                  {msg.unit_id} <span className="timestamp">{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+              <div 
+                key={index} 
+                className={`message ${msg.unit_id === myUnitId ? 'sent' : 'received'}`}
+              >
+                <div className="message-sender" style={{ color: msg.color || getUserColor(msg.unit_id) }}>
+                  {msg.unit_id} <span style={{fontSize: '0.7em', opacity: 0.7}}>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
                 <div className="message-content" dir="auto">
                   {msg.content}
@@ -139,12 +137,12 @@ const ChatComponent = ({ myUnitId }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSendMessage} className="chat-input-area">
+          <form onSubmit={handleSendMessage} className="chat-input-form">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder="TRANSMIT MESSAGE..."
+              placeholder="TYPE MESSAGE..."
               className="chat-input"
               dir="auto"
             />

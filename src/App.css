@@ -762,6 +762,7 @@ body {
   z-index: 4000; /* Very high z-index */
   transition: all 0.3s;
   box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+  pointer-events: auto; /* Enable interaction inside hud-overlay */
 }
 
 .chat-toggle-btn:hover {
@@ -784,6 +785,7 @@ body {
   z-index: 3999; /* High, but below the button */
   box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
   animation: slide-up 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  pointer-events: auto; /* Enable interaction inside hud-overlay */
 }
 
 @keyframes slide-up {
