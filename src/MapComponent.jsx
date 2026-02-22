@@ -156,6 +156,7 @@ const MapComponent = ({ session }) => {
   const [myRoutePath, setMyRoutePath] = useState(null); // Array of [lat, lng]
   const [candidateRoutes, setCandidateRoutes] = useState([]); // Array of route objects
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
+  const [showLinkModal, setShowLinkModal] = useState(false); // New state for Link Modal
 
   // Use Email as Unit ID (or part of it)
   useEffect(() => {
@@ -284,6 +285,8 @@ const MapComponent = ({ session }) => {
                 [targetIdInput]: { lat: demoLat, lng: demoLng, lastUpdate: new Date() }
             }));
         }
+        setShowLinkModal(false); // Close modal after linking
+        setTargetIdInput(''); // Clear input
     }, 1500);
   };
 

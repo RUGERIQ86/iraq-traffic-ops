@@ -1,10 +1,121 @@
+/* Bottom Toolbar */
+.bottom-toolbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: rgba(0, 0, 0, 0.9);
+  border-top: 2px solid #00ff00;
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  pointer-events: auto;
+  z-index: 100;
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: 1px solid #00ff00;
+  color: #00ff00;
+  padding: 10px;
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: bold;
+  font-size: 12px;
+  cursor: pointer;
+  flex: 1;
+  margin: 0 5px;
+  text-align: center;
+}
+
+.toolbar-btn.active {
+  background: #00ff00;
+  color: black;
+}
+
+.toolbar-btn.danger {
+  border-color: red;
+  color: red;
+}
+
+.status-bar {
+  position: absolute;
+  bottom: 60px; /* Above toolbar */
+  left: 0;
+  width: 100%;
+  text-align: center;
+  color: #00ff00;
+  font-size: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 5px 0;
+  pointer-events: none;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  pointer-events: auto;
+}
+
+.modal-content {
+  background: black;
+  border: 2px solid #00ff00;
+  padding: 20px;
+  width: 80%;
+  max-width: 300px;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+}
+
+.modal-content h3 {
+  color: #00ff00;
+  margin-top: 0;
+  border-bottom: 1px solid #00ff00;
+  padding-bottom: 10px;
+}
+
+.modal-input {
+  width: 90%;
+  background: #111;
+  border: 1px solid #005500;
+  color: #00ff00;
+  padding: 10px;
+  margin: 15px 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 16px;
+  text-align: center;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid red;
+  color: red;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 2px 5px;
+  margin-top: 5px;
+}
+
 /* Route Selection Panel */
 .route-selection-panel {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.95);
   border: 2px solid #00ff00;
   padding: 20px;
   width: 300px;
@@ -98,6 +209,11 @@
   .route-selection-panel {
     width: 85%;
     padding: 15px;
+  }
+  
+  .toolbar-btn {
+    font-size: 10px;
+    padding: 8px 2px;
   }
 }
 
@@ -445,61 +561,10 @@ body {
   pointer-events: auto; /* Enable interaction */
 }
 
-/* Mobile Responsive Styles */
-@media (max-width: 768px) {
-  .top-left {
-    top: 10px;
-    left: 10px;
-    padding: 10px;
-    font-size: 12px;
-    max-width: 45%;
-  }
-
-  .top-right {
-    top: 10px;
-    right: 10px;
-    padding: 10px;
-    font-size: 12px;
-    max-width: 45%;
-    text-align: right;
-  }
-
-  .bottom-left {
-    bottom: 80px; /* Move up to avoid locate button */
-    left: 10px;
-    right: 10px; /* Full width */
-    padding: 10px;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border-right: 1px solid var(--hud-color); /* Add right border */
-    border-top: 1px solid var(--hud-color); /* Add top border */
-  }
-
-  .bottom-right {
-    display: none; /* Hide less critical info on mobile */
-  }
-
-  .locate-btn {
-    bottom: 20px;
-    width: 80%;
-    padding: 15px;
-    font-size: 16px;
-    z-index: 20; /* Ensure it's on top */
-  }
-
-  /* Make buttons larger for touch */
-  button {
-    min-height: 44px; /* Apple HIG minimum touch target */
-    font-size: 14px !important;
-  }
-
-  input {
-    height: 40px;
-    font-size: 16px !important; /* Prevent zoom on iOS */
-  }
-}
+.top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; }
+.top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; text-align: right; }
+.bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; }
+.bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; text-align: right; }
 
 /* Crosshair */
 .crosshair {
@@ -545,31 +610,6 @@ body {
   background: radial-gradient(circle, transparent 50%, black 150%);
   pointer-events: none;
   z-index: 12;
-}
-
-/* Locate Button */
-.locate-btn {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0, 0, 0, 0.8);
-  color: var(--alert-color);
-  border: 1px solid var(--alert-color);
-  padding: 10px 20px;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  cursor: pointer;
-  pointer-events: auto;
-  transition: all 0.3s;
-  text-shadow: 0 0 5px var(--alert-color);
-  box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
-}
-
-.locate-btn:hover {
-  background: var(--alert-color);
-  color: black;
-  box-shadow: 0 0 20px var(--alert-color);
 }
 
 /* Hacker Popup */
