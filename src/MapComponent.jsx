@@ -385,6 +385,29 @@ const MapComponent = ({ session }) => {
           </Marker>
         )}
 
+        {/* Candidate Routes (Selection Mode) */}
+        {candidateRoutes.map((route, index) => (
+            <Polyline 
+                key={index}
+                positions={route.coords}
+                pathOptions={{ 
+                    color: selectedRouteIndex === index ? '#000000' : '#555555', // Black (White on map) for selected, Gray for others
+                    weight: selectedRouteIndex === index ? 6 : 3, 
+                    opacity: selectedRouteIndex === index ? 1 : 0.5,
+                    dashArray: selectedRouteIndex === index ? null : '5, 10'
+                }}
+                eventHandlers={{
+                    click: () => setSelectedRouteIndex(index)
+                }}
+            >
+                 {selectedRouteIndex === index && (
+                    <Tooltip sticky className="mission-tooltip">
+                        {route.name} | {(route.distance/1000).toFixed(1)}km | {Math.round(route.duration/60)}min
+                    </Tooltip>
+                 )}
+            </Polyline>
+        ))}
+
         {/* Route Selection Panel */}
         {candidateRoutes.length > 0 && (
             <div className="route-selection-panel">

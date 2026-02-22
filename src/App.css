@@ -1,6 +1,6 @@
 /* Bottom Toolbar */
 .bottom-toolbar {
-  position: absolute;
+  position: fixed; /* Changed from absolute to fixed */
   bottom: 0;
   left: 0;
   width: 100%;
@@ -9,8 +9,9 @@
   display: flex;
   justify-content: space-around;
   padding: 1vh 0;
+  padding-bottom: calc(1vh + env(safe-area-inset-bottom)); /* Safe area for iPhone X+ */
   pointer-events: auto;
-  z-index: 100;
+  z-index: 2000; /* Increased z-index significantly */
 }
 
 .toolbar-btn {
@@ -27,6 +28,9 @@
   text-align: center;
   transition: all 0.2s ease-in-out;
   text-transform: uppercase;
+  white-space: nowrap; /* Prevent text wrapping */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .toolbar-btn:hover {
@@ -58,7 +62,7 @@
 
 .status-bar {
   position: absolute;
-  bottom: 8vh; /* Above toolbar */
+  bottom: calc(8vh + env(safe-area-inset-bottom)); /* Adjusted for safe area */
   left: 0;
   width: 100%;
   text-align: center;
@@ -68,6 +72,7 @@
   padding: 1vh 0;
   pointer-events: none;
   backdrop-filter: blur(2px);
+  z-index: 1500; /* Ensure it's above map but below modal */
 }
 
 /* Modal Styles */
@@ -81,7 +86,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 2000;
+  z-index: 3000; /* Highest z-index */
   pointer-events: auto;
   backdrop-filter: blur(5px);
 }
@@ -159,7 +164,7 @@
   border: 2px solid #00ff00;
   padding: 2vh 2vw;
   width: clamp(280px, 80vw, 400px); /* Responsive Width */
-  z-index: 1000;
+  z-index: 2500; /* Above toolbar */
   font-family: 'Courier New', Courier, monospace;
   box-shadow: 0 0 50px rgba(0, 255, 0, 0.15);
   pointer-events: auto;
