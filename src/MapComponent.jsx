@@ -227,22 +227,51 @@ const MapComponent = ({ session }) => {
   useEffect(() => {
     if (!supabase) return;
 
+    // Fetch initial locations of all users
+    const fetchInitialLocations = async () => {
+        const { data, error } = await supabase
+            .from('locations')
+            .select('*');
+        
+        if (data) {
+            const members = {};
+            data.forEach(member => {
+                if (member.unit_id !== myUnitId) {
+                    members[member.unit_id] = {
+                        lat: member.lat,
+                        lng: member.lng,
+                        lastUpdate: new Date(member.last_updated),
+                        route_path: member.route_path,
+                        target_lat: member.target_lat,
+                        target_lng: member.target_lng
+                    };
+                }
+            });
+            setSquadMembers(prev => ({ ...prev, ...members }));
+        }
+    };
+
+    fetchInitialLocations();
+
     const channel = supabase
       .channel('public:locations')
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'locations' }, (payload) => {
-        const { unit_id, lat, lng, route_path, target_lat, target_lng } = payload.new;
-        if (unit_id !== myUnitId) {
-            setSquadMembers(prev => ({
-                ...prev,
-                [unit_id]: { 
-                    lat, 
-                    lng, 
-                    lastUpdate: new Date(),
-                    route_path, // Receive route from others
-                    target_lat,
-                    target_lng
-                }
-            }));
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, (payload) => {
+        // Handle INSERT and UPDATE
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const { unit_id, lat, lng, route_path, target_lat, target_lng, last_updated } = payload.new;
+            if (unit_id !== myUnitId) {
+                setSquadMembers(prev => ({
+                    ...prev,
+                    [unit_id]: { 
+                        lat, 
+                        lng, 
+                        lastUpdate: new Date(last_updated),
+                        route_path, 
+                        target_lat,
+                        target_lng
+                    }
+                }));
+            }
         }
       })
       .subscribe();
@@ -472,53 +501,40 @@ const MapComponent = ({ session }) => {
             </>
         )}
 
-        {/* Squad Markers & Tactical Lines */}
+        {/* Squad Members (Blue/Green Tactical) */}
         {Object.entries(squadMembers).map(([id, data]) => {
-            const distance = userLocation 
-                ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
-                : 0;
+            // Check if member is online (updated in last 2 minutes)
+            const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
             
             return (
-                <div key={id}>
-                    {/* Tactical Line (Green - Link) */}
-                    {userLocation && (
-                        <Polyline 
-                            positions={[userLocation, [data.lat, data.lng]]}
-                            pathOptions={{ color: '#00ff00', weight: 3, opacity: 1 }}
-                        >
-                            <Tooltip permanent direction="center" className="tactical-tooltip">
-                                {id} | {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
-                            </Tooltip>
-                        </Polyline>
-                    )}
-
-                    {/* Squad Member's Mission Route (White - Code Black) */}
-                    {data.route_path && (
-                        <Polyline 
-                            positions={data.route_path}
-                            pathOptions={{ color: '#000000', weight: 3, opacity: 0.8, dashArray: '5, 5' }}
-                        >
-                             <Tooltip sticky className="mission-tooltip">{id}'s MISSION</Tooltip>
-                        </Polyline>
-                    )}
-                    {/* Squad Member's Target Marker */}
-                    {data.target_lat && (
-                         <Marker position={[data.target_lat, data.target_lng]} icon={targetIcon} />
-                    )}
-
-                    {/* Squad Marker */}
-                    <Marker position={[data.lat, data.lng]} icon={squadIcon}>
-                        <Popup>
-                            <div className="hacker-popup" style={{borderColor: '#00ff00'}}>
-                                <h3 style={{color: '#00ff00', borderColor: '#00ff00'}}>UNIT: {id}</h3>
-                                <p>STATUS: LINKED</p>
-                                <p>DIST: {distance}m</p>
-                                <p>LAT: {data.lat.toFixed(4)}</p>
-                                <p>LNG: {data.lng.toFixed(4)}</p>
-                            </div>
-                        </Popup>
+              <div key={id}>
+                <Marker position={[data.lat, data.lng]} icon={squadIcon} opacity={isMemberOnline ? 1 : 0.5}>
+                  <Popup>
+                    <div className="hacker-popup">
+                      <h3>UNIT: {id}</h3>
+                      <p>STATUS: {isMemberOnline ? 'ONLINE' : 'OFFLINE'}</p>
+                      <p>LAST SEEN: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
+                      <p>LAT: {data.lat.toFixed(4)}</p>
+                      <p>LNG: {data.lng.toFixed(4)}</p>
+                    </div>
+                  </Popup>
+                </Marker>
+                {/* Show Squad Route if available */}
+                {data.route_path && (
+                    <Polyline 
+                        positions={data.route_path}
+                        pathOptions={{ color: '#00ff00', weight: 2, dashArray: '5, 10', opacity: 0.6 }}
+                    >
+                        <Tooltip sticky className="tactical-tooltip">UNIT {id} PATH</Tooltip>
+                    </Polyline>
+                )}
+                {/* Show Squad Target if available */}
+                {data.target_lat && (
+                    <Marker position={[data.target_lat, data.target_lng]} icon={targetIcon} opacity={0.7}>
+                         <Tooltip sticky className="tactical-tooltip">UNIT {id} TARGET</Tooltip>
                     </Marker>
-                </div>
+                )}
+              </div>
             );
         })}
 
