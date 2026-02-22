@@ -47,7 +47,12 @@ const ChatComponent = ({ myUnitId }) => {
         .order('created_at', { ascending: true })
         .limit(50);
       
-      if (data) setMessages(data);
+      if (error) {
+        console.error("Chat Error (Fetching):", error.message);
+        alert("Chat Error: Could not load messages. Check RLS policies in Supabase.");
+      } else {
+        setMessages(data);
+      }
     };
 
     fetchMessages();
@@ -56,12 +61,21 @@ const ChatComponent = ({ myUnitId }) => {
     const channel = supabase
       .channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
+        if (payload.errors) {
+            console.error("Chat Error (Realtime):", payload.errors);
+            return;
+        }
         setMessages(prev => [...prev, payload.new]);
         if (!isOpen) {
           setHasUnread(true);
         }
       })
-      .subscribe();
+      .subscribe((status, err) => {
+        if (err) {
+            console.error("Chat Subscription Error:", err);
+            alert("Chat Error: Could not connect to real-time chat. Check Supabase connection and RLS.");
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -70,17 +84,16 @@ const ChatComponent = ({ myUnitId }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !myUnitId) {
+        if (!myUnitId) alert("Cannot send message: User ID is not set.");
+        return;
+    }
 
     const messageData = {
       unit_id: myUnitId,
       content: newMessage.trim(),
       color: getUserColor(myUnitId),
-      created_at: new Date().toISOString()
     };
-
-    // Optimistic update
-    // setMessages(prev => [...prev, messageData]); 
 
     const { error } = await supabase
       .from('messages')
@@ -88,6 +101,7 @@ const ChatComponent = ({ myUnitId }) => {
 
     if (error) {
       console.error('Error sending message:', error);
+      alert(`Error sending message: ${error.message}. Check RLS policies.`);
     } else {
       setNewMessage('');
     }

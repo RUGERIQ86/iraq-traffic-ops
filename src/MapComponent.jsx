@@ -31,15 +31,17 @@ const militaryIcon = L.divIcon({
   iconAnchor: [20, 20]
 });
 
-// Custom Squad Icon (Blue/Green Tactical) - Friend
+// Custom Squad Icon (Red Radiation - Same as User)
 const squadIcon = L.divIcon({
-  className: 'squad-marker',
+  className: 'military-user-marker',
   html: `
-    <div class="squad-core" style="background-color: #00ff00; box-shadow: 0 0 10px #00ff00;"></div>
-    <div class="squad-ring" style="border-color: #00ff00;"></div>
+    <div class="radiation-core"></div>
+    <div class="radiation-wave"></div>
+    <div class="radiation-wave"></div>
+    <div class="radiation-wave"></div>
   `,
-  iconSize: [30, 30],
-  iconAnchor: [15, 15]
+  iconSize: [40, 40],
+  iconAnchor: [20, 20]
 });
 
 // Target Icon (White Crosshair - Code Black to appear White)
