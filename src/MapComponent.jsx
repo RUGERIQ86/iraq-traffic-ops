@@ -543,7 +543,7 @@ const MapComponent = ({ session }) => {
                 {data.route_path && (
                     <Polyline 
                         positions={data.route_path}
-                        pathOptions={{ color: '#00ff00', weight: 2, dashArray: '5, 10', opacity: 0.6 }}
+                        pathOptions={{ color: '#ffffff', weight: 2, dashArray: '5, 10', opacity: 0.7 }}
                     >
                         <Tooltip sticky className="tactical-tooltip">UNIT {id} PATH</Tooltip>
                     </Polyline>
