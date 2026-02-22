@@ -8,39 +8,39 @@ export default defineConfig({
   plugins: [
     react(),
     basicSsl(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-      manifest: {
-        name: 'Iraq Traffic Ops',
-        short_name: 'TrafficOps',
-        description: 'Military Grade Traffic Monitoring System',
-        theme_color: '#000000',
-        background_color: '#000000',
-        display: 'standalone',
-        orientation: 'portrait',
-        scope: '/',
-        start_url: '/',
-        icons: [
-          {
-            src: 'pwa-192x192.png',
-            sizes: '192x192',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png'
-          },
-          {
-            src: 'pwa-512x512.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
-        ]
-      }
-    })
+    // VitePWA({
+    //   registerType: 'autoUpdate',
+    //   includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
+    //   manifest: {
+    //     name: 'Iraq Traffic Ops',
+    //     short_name: 'TrafficOps',
+    //     description: 'Military Grade Traffic Monitoring System',
+    //     theme_color: '#000000',
+    //     background_color: '#000000',
+    //     display: 'standalone',
+    //     orientation: 'portrait',
+    //     scope: '/',
+    //     start_url: '/',
+    //     icons: [
+    //       {
+    //         src: 'pwa-192x192.png',
+    //         sizes: '192x192',
+    //         type: 'image/png'
+    //       },
+    //       {
+    //         src: 'pwa-512x512.png',
+    //         sizes: '512x512',
+    //         type: 'image/png'
+    //       },
+    //       {
+    //         src: 'pwa-512x512.png',
+    //         sizes: '512x512',
+    //         type: 'image/png',
+    //         purpose: 'any maskable'
+    //       }
+    //     ]
+    //   }
+    // })
   ],
   server: {
     host: true, // Allow network access (e.g. from phone)
