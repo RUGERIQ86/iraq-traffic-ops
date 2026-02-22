@@ -154,6 +154,8 @@ const MapComponent = ({ session }) => {
   const [isTargetMode, setIsTargetMode] = useState(false);
   const [myTarget, setMyTarget] = useState(null); // { lat, lng }
   const [myRoutePath, setMyRoutePath] = useState(null); // Array of [lat, lng]
+  const [candidateRoutes, setCandidateRoutes] = useState([]); // Array of route objects
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
 
   // Use Email as Unit ID (or part of it)
   useEffect(() => {
@@ -293,27 +295,40 @@ const MapComponent = ({ session }) => {
   const handleSetMissionTarget = async (latlng) => {
     setIsTargetMode(false);
     setMyTarget(latlng);
-    setStatusMsg('CALCULATING ROUTE...');
+    setCandidateRoutes([]); // Clear previous candidates
+    setMyRoutePath(null); // Clear current path
+    setStatusMsg('CALCULATING TACTICAL ROUTES...');
 
     if (!userLocation) {
         setStatusMsg('ERR: NO START POS');
         return;
     }
 
-    // Fetch Route from OSRM
+    // Fetch Route from OSRM with alternatives
     try {
         const start = `${userLocation[1]},${userLocation[0]}`; // lng,lat
         const end = `${latlng.lng},${latlng.lat}`;
-        const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`;
+        // Request alternatives=3 to get multiple options
+        const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson&alternatives=3`;
         
         const response = await fetch(url);
         const data = await response.json();
 
         if (data.routes && data.routes.length > 0) {
-            // OSRM returns [lng, lat], Leaflet needs [lat, lng]
-            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-            setMyRoutePath(routeCoords);
-            setStatusMsg('MISSION ROUTE SET');
+            // Process routes
+            const routes = data.routes.map((route, index) => ({
+                id: index,
+                coords: route.geometry.coordinates.map(c => [c[1], c[0]]), // Convert to [lat, lng]
+                distance: route.distance, // meters
+                duration: route.duration, // seconds
+                name: index === 0 ? 'ALPHA (FASTEST)' : index === 1 ? 'BRAVO (SHORTEST)' : 'CHARLIE (ALT)',
+                type: index === 0 ? 'FAST' : index === 1 ? 'SHORT' : 'ALT'
+            }));
+
+            // Sort logic could be added here, but OSRM usually puts fastest first
+            setCandidateRoutes(routes);
+            setSelectedRouteIndex(0);
+            setStatusMsg('ROUTES ACQUIRED. AWAITING SELECTION.');
         } else {
             setStatusMsg('ERR: NO ROUTE FOUND');
             // Fallback to straight line
@@ -326,9 +341,18 @@ const MapComponent = ({ session }) => {
     }
   };
 
+  const confirmRoute = () => {
+      if (candidateRoutes.length > 0) {
+          setMyRoutePath(candidateRoutes[selectedRouteIndex].coords);
+          setCandidateRoutes([]); // Clear candidates after selection
+          setStatusMsg(`ROUTE ${candidateRoutes[selectedRouteIndex].name} ENGAGED`);
+      }
+  };
+
   const clearMission = () => {
       setMyTarget(null);
       setMyRoutePath(null);
+      setCandidateRoutes([]);
       setStatusMsg('MISSION ABORTED');
   };
 
@@ -357,6 +381,29 @@ const MapComponent = ({ session }) => {
             </Popup>
           </Marker>
         )}
+
+        {/* Candidate Routes (Selection Mode) */}
+        {candidateRoutes.map((route, index) => (
+            <Polyline 
+                key={index}
+                positions={route.coords}
+                pathOptions={{ 
+                    color: selectedRouteIndex === index ? '#000000' : '#555555', // Black (White on map) for selected, Gray for others
+                    weight: selectedRouteIndex === index ? 6 : 3, 
+                    opacity: selectedRouteIndex === index ? 1 : 0.5,
+                    dashArray: selectedRouteIndex === index ? null : '5, 10'
+                }}
+                eventHandlers={{
+                    click: () => setSelectedRouteIndex(index)
+                }}
+            >
+                 {selectedRouteIndex === index && (
+                    <Tooltip sticky className="mission-tooltip">
+                        {route.name} | {(route.distance/1000).toFixed(1)}km | {Math.round(route.duration/60)}min
+                    </Tooltip>
+                 )}
+            </Polyline>
+        ))}
 
         {/* My Mission Route (White - Code Black) */}
         {myRoutePath && (
@@ -517,6 +564,30 @@ const MapComponent = ({ session }) => {
             </button>
         </div>
         
+        {/* Route Selection Panel */}
+        {candidateRoutes.length > 0 && (
+            <div className="route-selection-panel">
+                <div className="panel-header">SELECT INFILTRATION ROUTE</div>
+                {candidateRoutes.map((route, index) => (
+                    <div 
+                        key={index} 
+                        className={`route-option ${selectedRouteIndex === index ? 'selected' : ''}`}
+                        onClick={() => setSelectedRouteIndex(index)}
+                    >
+                        <div className="route-name">{route.name}</div>
+                        <div className="route-stats">
+                            <span>DIST: {(route.distance/1000).toFixed(1)}km</span>
+                            <span>TIME: {Math.round(route.duration/60)}min</span>
+                        </div>
+                    </div>
+                ))}
+                <div className="panel-actions">
+                    <button onClick={confirmRoute} className="confirm-btn">[ EXECUTE ]</button>
+                    <button onClick={clearMission} className="cancel-btn">[ ABORT ]</button>
+                </div>
+            </div>
+        )}
+
         {/* Squad Link Panel (Bottom Left) */}
         <div className="bottom-left" style={{pointerEvents: 'auto'}}>
             <div style={{marginBottom: '5px'}}>LINK NEW UNIT:</div>
