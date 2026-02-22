@@ -446,10 +446,18 @@ const MapComponent = ({ session }) => {
   const selectSearchResult = (result) => {
       const lat = parseFloat(result.lat);
       const lon = parseFloat(result.lon);
-      setPosition([lat, lon]); // Fly to location
-      setSearchResults([]); // Clear results
-      setSearchQuery(''); // Clear query
-      setStatusMsg(`TARGET ACQUIRED: ${result.display_name.split(',')[0]}`);
+      
+      // Fly to the location
+      setPosition([lat, lon]); 
+      
+      // Clear search UI
+      setSearchResults([]); 
+      setSearchQuery(''); 
+      
+      // Set as Mission Target and Calculate Route
+      handleSetMissionTarget({ lat, lng: lon });
+      
+      setStatusMsg(`TARGET LOCKED: ${result.display_name.split(',')[0]}`);
   };
 
   return (
