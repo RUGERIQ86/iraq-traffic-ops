@@ -331,7 +331,7 @@ const MapComponent = ({ session }) => {
             // Sort logic could be added here, but OSRM usually puts fastest first
             setCandidateRoutes(routes);
             setSelectedRouteIndex(0);
-            setStatusMsg('ROUTES ACQUIRED. AWAITING SELECTION.');
+            setStatusMsg(routes.length > 1 ? 'ROUTES ACQUIRED. AWAITING SELECTION.' : 'OPTIMAL ROUTE ACQUIRED. NO ALTERNATIVES.');
         } else {
             setStatusMsg('ERR: NO ROUTE FOUND');
             // Fallback to straight line
@@ -385,28 +385,36 @@ const MapComponent = ({ session }) => {
           </Marker>
         )}
 
-        {/* Candidate Routes (Selection Mode) */}
-        {candidateRoutes.map((route, index) => (
-            <Polyline 
-                key={index}
-                positions={route.coords}
-                pathOptions={{ 
-                    color: selectedRouteIndex === index ? '#000000' : '#555555', // Black (White on map) for selected, Gray for others
-                    weight: selectedRouteIndex === index ? 6 : 3, 
-                    opacity: selectedRouteIndex === index ? 1 : 0.5,
-                    dashArray: selectedRouteIndex === index ? null : '5, 10'
-                }}
-                eventHandlers={{
-                    click: () => setSelectedRouteIndex(index)
-                }}
-            >
-                 {selectedRouteIndex === index && (
-                    <Tooltip sticky className="mission-tooltip">
-                        {route.name} | {(route.distance/1000).toFixed(1)}km | {Math.round(route.duration/60)}min
-                    </Tooltip>
-                 )}
-            </Polyline>
-        ))}
+        {/* Route Selection Panel */}
+        {candidateRoutes.length > 0 && (
+            <div className="route-selection-panel">
+                <div className="panel-header">
+                    {candidateRoutes.length > 1 ? 'SELECT INFILTRATION ROUTE' : 'PRIMARY ROUTE LOCKED'}
+                </div>
+                {candidateRoutes.map((route, index) => (
+                    <div 
+                        key={index} 
+                        className={`route-option ${selectedRouteIndex === index ? 'selected' : ''}`}
+                        onClick={() => setSelectedRouteIndex(index)}
+                    >
+                        <div className="route-name">{route.name}</div>
+                        <div className="route-stats">
+                            <span>DIST: {(route.distance/1000).toFixed(1)}km</span>
+                            <span>TIME: {Math.round(route.duration/60)}min</span>
+                        </div>
+                    </div>
+                ))}
+                {candidateRoutes.length === 1 && (
+                    <div style={{color: '#aaa', fontSize: '10px', textAlign: 'center', margin: '10px 0'}}>
+                        NO ALTERNATIVE ROUTES AVAILABLE FOR THIS TARGET
+                    </div>
+                )}
+                <div className="panel-actions">
+                    <button onClick={confirmRoute} className="confirm-btn">[ EXECUTE ]</button>
+                    <button onClick={clearMission} className="cancel-btn">[ ABORT ]</button>
+                </div>
+            </div>
+        )}
 
         {/* My Mission Route (White - Code Black) */}
         {myRoutePath && (
@@ -507,139 +515,77 @@ const MapComponent = ({ session }) => {
       <div className="scanline"></div>
       <div className="vignette"></div>
       
+      {/* Link Unit Modal */}
+      {showLinkModal && (
+          <div className="modal-overlay">
+              <div className="modal-content">
+                  <h3>ESTABLISH LINK</h3>
+                  <input 
+                      type="text" 
+                      value={targetIdInput}
+                      onChange={(e) => setTargetIdInput(e.target.value)}
+                      placeholder="ENTER UNIT ID"
+                      className="modal-input"
+                  />
+                  <div className="modal-actions">
+                      <button onClick={handleAddTarget} className="confirm-btn">CONNECT</button>
+                      <button onClick={() => setShowLinkModal(false)} className="cancel-btn">CANCEL</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {/* HUD Interface */}
       <div className="hud-overlay">
-        <div className="top-left">
-            <div>SYS.OP: {isOnline ? 'CONNECTED' : 'OFFLINE'}</div>
-            <div>UNIT_ID: <span style={{color: '#00ff00', fontWeight: 'bold'}}>{myUnitId}</span></div>
-            
-            {/* Mission Controls */}
-            <div style={{marginTop: '15px'}}>
-                <button 
-                    onClick={() => setIsTargetMode(!isTargetMode)}
-                    style={{
-                        background: isTargetMode ? 'orange' : 'rgba(0,0,0,0.8)',
-                        color: isTargetMode ? 'black' : 'orange',
-                        border: '1px solid orange',
-                        padding: '8px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        width: '100%',
-                        marginBottom: '5px'
-                    }}
-                >
-                    {isTargetMode ? '[ SELECT ON MAP ]' : '[ SET MISSION TARGET ]'}
-                </button>
-                {myTarget && (
-                    <button 
-                        onClick={clearMission}
-                        style={{
-                            background: 'rgba(255,0,0,0.2)',
-                            color: 'red',
-                            border: '1px solid red',
-                            padding: '5px',
-                            cursor: 'pointer',
-                            width: '100%',
-                            fontSize: '10px'
-                        }}
-                    >
-                        [ ABORT MISSION ]
-                    </button>
-                )}
-            </div>
-        </div>
+          <div className="top-left">
+              <div>SYS.OP: {isOnline ? 'ONLINE' : 'OFFLINE'}</div>
+              <div>ID: <span style={{color: '#00ff00'}}>{myUnitId}</span></div>
+          </div>
 
-        <div className="top-right">
-            <div>LOC: {userLocation ? 'SECURE' : 'SEARCHING...'}</div>
-            <div>SQUAD: {Object.keys(squadMembers).length} UNITS</div>
-            <button 
-                onClick={handleLogout}
-                style={{
-                    background: 'transparent',
-                    border: '1px solid red',
-                    color: 'red',
-                    fontSize: '10px',
-                    marginTop: '5px',
-                    cursor: 'pointer'
-                }}
-            >
-                [ TERMINATE SESSION ]
-            </button>
-        </div>
-        
-        {/* Route Selection Panel */}
-        {candidateRoutes.length > 0 && (
-            <div className="route-selection-panel">
-                <div className="panel-header">SELECT INFILTRATION ROUTE</div>
-                {candidateRoutes.map((route, index) => (
-                    <div 
-                        key={index} 
-                        className={`route-option ${selectedRouteIndex === index ? 'selected' : ''}`}
-                        onClick={() => setSelectedRouteIndex(index)}
-                    >
-                        <div className="route-name">{route.name}</div>
-                        <div className="route-stats">
-                            <span>DIST: {(route.distance/1000).toFixed(1)}km</span>
-                            <span>TIME: {Math.round(route.duration/60)}min</span>
-                        </div>
-                    </div>
-                ))}
-                <div className="panel-actions">
-                    <button onClick={confirmRoute} className="confirm-btn">[ EXECUTE ]</button>
-                    <button onClick={clearMission} className="cancel-btn">[ ABORT ]</button>
-                </div>
-            </div>
-        )}
+          <div className="top-right">
+              <div>SQUAD: {Object.keys(squadMembers).length}</div>
+              <button onClick={handleLogout} className="logout-btn">[ EXIT ]</button>
+          </div>
+          
+          {/* Bottom Toolbar (Mobile Friendly) */}
+          <div className="bottom-toolbar">
+              <button 
+                  className={`toolbar-btn ${isTargetMode ? 'active' : ''}`}
+                  onClick={() => setIsTargetMode(!isTargetMode)}
+              >
+                  {isTargetMode ? 'CANCEL TARGET' : 'SET TARGET'}
+              </button>
 
-        {/* Squad Link Panel (Bottom Left) */}
-        <div className="bottom-left" style={{pointerEvents: 'auto'}}>
-            <div style={{marginBottom: '5px'}}>LINK NEW UNIT:</div>
-            <div style={{display: 'flex', gap: '5px'}}>
-                <input 
-                    type="text" 
-                    value={targetIdInput}
-                    onChange={(e) => setTargetIdInput(e.target.value)}
-                    placeholder="ENTER UNIT ID"
-                    style={{
-                        background: 'rgba(0,0,0,0.7)',
-                        border: '1px solid #00ff00',
-                        color: '#00ff00',
-                        padding: '5px',
-                        fontFamily: 'monospace',
-                        width: '120px'
-                    }}
-                />
-                <button 
-                    onClick={handleAddTarget}
-                    style={{
-                        background: '#00ff00',
-                        color: 'black',
-                        border: 'none',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        padding: '5px 10px'
-                    }}
-                >
-                    LINK
-                </button>
-            </div>
-            <div style={{fontSize: '10px', marginTop: '5px', color: '#aaa'}}>
-                STATUS: {statusMsg}
-            </div>
-        </div>
+              <button 
+                  className="toolbar-btn"
+                  onClick={() => setShowLinkModal(true)}
+              >
+                  LINK UNIT
+              </button>
 
-        <div className="bottom-right">
-            <div>ENC: AES-256</div>
-            <div>SEC_LEVEL: 5</div>
-        </div>
-        
-        {/* Center Crosshair (Hidden in Target Mode) */}
-        {!isTargetMode && <div className="crosshair"></div>}
+              <button 
+                  className="toolbar-btn"
+                  onClick={handleLocateMe}
+              >
+                  LOCATE ME
+              </button>
 
-        {/* Locate Button */}
-        <button className="locate-btn" onClick={handleLocateMe}>
-            [ RE-ACQUIRE TARGET ]
-        </button>
+              {myTarget && (
+                  <button 
+                      className="toolbar-btn danger"
+                      onClick={clearMission}
+                  >
+                      ABORT
+                  </button>
+              )}
+          </div>
+
+          <div className="status-bar">
+              STATUS: {statusMsg}
+          </div>
+          
+          {/* Center Crosshair (Hidden in Target Mode) */}
+          {!isTargetMode && <div className="crosshair"></div>}
       </div>
     </div>
   );
