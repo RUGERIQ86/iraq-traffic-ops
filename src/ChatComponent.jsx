@@ -44,14 +44,15 @@ const ChatComponent = ({ myUnitId }) => {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false }) // Get latest messages
         .limit(50);
       
       if (error) {
         console.error("Chat Error (Fetching):", error.message);
         alert("Chat Error: Could not load messages. Check RLS policies in Supabase.");
       } else {
-        setMessages(data);
+        // Reverse to show oldest first (top) to newest (bottom)
+        setMessages(data.reverse());
       }
     };
 

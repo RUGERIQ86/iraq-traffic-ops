@@ -337,7 +337,7 @@ const MapComponent = ({ session }) => {
   };
 
   // Handle setting a mission target
-  const handleSetMissionTarget = async (latlng, name = 'MISSION TARGET') => {
+  const handleSetMissionTarget = async (latlng, name = 'MISSION TARGET', autoConfirm = false) => {
     setIsTargetMode(false);
     setMyTarget(latlng);
     setMyTargetName(name); // Store target name
@@ -372,9 +372,17 @@ const MapComponent = ({ session }) => {
             }));
 
             // Sort logic could be added here, but OSRM usually puts fastest first
-            setCandidateRoutes(routes);
-            setSelectedRouteIndex(0);
-            setStatusMsg(routes.length > 1 ? 'ROUTES ACQUIRED. AWAITING SELECTION.' : 'OPTIMAL ROUTE ACQUIRED. NO ALTERNATIVES.');
+            
+            if (autoConfirm) {
+                // Automatically select the first (fastest) route
+                setMyRoutePath(routes[0].coords);
+                setCandidateRoutes([]); // Clear candidates so panel doesn't show
+                setStatusMsg(`ROUTE ${routes[0].name} ENGAGED AUTOMATICALLY`);
+            } else {
+                setCandidateRoutes(routes);
+                setSelectedRouteIndex(0);
+                setStatusMsg(routes.length > 1 ? 'ROUTES ACQUIRED. AWAITING SELECTION.' : 'OPTIMAL ROUTE ACQUIRED. NO ALTERNATIVES.');
+            }
         } else {
             setStatusMsg('ERR: NO ROUTE FOUND');
             // Fallback to straight line
@@ -457,7 +465,7 @@ const MapComponent = ({ session }) => {
       setSearchQuery(''); 
       
       // Set as Mission Target and Calculate Route
-      handleSetMissionTarget({ lat, lng: lon }, result.display_name.split(',')[0]);
+      handleSetMissionTarget({ lat, lng: lon }, result.display_name.split(',')[0], true);
       
       setStatusMsg(`TARGET LOCKED: ${result.display_name.split(',')[0]}`);
   };
