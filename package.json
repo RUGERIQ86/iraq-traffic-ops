@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
+    "@capacitor/geolocation": "^8.1.0",
     "@supabase/supabase-js": "^2.97.0",
     "leaflet": "^1.9.4",
     "mapbox-gl": "^3.18.1",

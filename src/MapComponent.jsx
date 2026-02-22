@@ -286,6 +286,25 @@ const MapComponent = ({ session }) => {
     };
   }, [myUnitId]);
 
+  // Generate a consistent neon color for each user
+  const getUserColor = (userId) => {
+    const colors = [
+      '#00ff00', // Green
+      '#00ffff', // Cyan
+      '#ff00ff', // Magenta
+      '#ffff00', // Yellow
+      '#ff9900', // Orange
+      '#ff0000', // Red
+      '#0099ff', // Blue
+      '#ccff00'  // Lime
+    ];
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = userId.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const handleLocateMe = () => {
     setStatusMsg('ACQUIRING TARGET...');
     if (!navigator.geolocation) {
@@ -784,9 +803,56 @@ const MapComponent = ({ session }) => {
               <div>ID: <span style={{color: '#00ff00'}}>{myUnitId}</span></div>
           </div>
 
-          <div className="top-right">
-              <div>SQUAD: {Object.values(squadMembers).filter(m => (new Date() - new Date(m.lastUpdate)) < 3600000).length}</div>
-              <button onClick={handleLogout} className="logout-btn">[ EXIT ]</button>
+          <div className="top-right" style={{minWidth: '150px'}}>
+              <div style={{marginBottom: '5px', borderBottom: '1px solid #00ff00', fontSize: '12px', fontWeight: 'bold'}}>ACTIVE SQUAD UNITS</div>
+              <div style={{maxHeight: '150px', overflowY: 'auto'}}>
+                  {Object.entries(squadMembers)
+                      .filter(([id, m]) => (new Date() - new Date(m.lastUpdate)) < 3600000) // Online within 1 hour
+                      .map(([id, m]) => {
+                          const distance = userLocation 
+                              ? calculateDistance(userLocation[0], userLocation[1], m.lat, m.lng) 
+                              : 0;
+                          const distanceStr = distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm';
+                          const userColor = getUserColor(id);
+
+                          return (
+                              <div 
+                                  key={id} 
+                                  style={{
+                                      color: userColor, 
+                                      cursor: 'pointer', 
+                                      fontSize: '12px',
+                                      marginBottom: '5px',
+                                      padding: '4px',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      borderBottom: `1px solid ${userColor}33`, // 20% opacity
+                                      transition: 'background 0.2s'
+                                  }}
+                                  onClick={() => {
+                                      // Fly to member location
+                                      setPosition([m.lat, m.lng]); 
+                                      setStatusMsg(`TRACKING UNIT: ${id}`);
+                                  }}
+                                  onMouseEnter={(e) => {
+                                       e.currentTarget.style.background = `${userColor}22`; // Low opacity background
+                                  }}
+                                  onMouseLeave={(e) => {
+                                       e.currentTarget.style.background = 'transparent';
+                                  }}
+                              >
+                                  <span style={{fontWeight: 'bold', textShadow: `0 0 5px ${userColor}`}}>• {id}</span>
+                                  <span style={{fontSize: '10px', color: '#aaa'}}>{distanceStr}</span>
+                              </div>
+                          );
+                      })
+                  }
+                  {Object.values(squadMembers).filter(m => (new Date() - new Date(m.lastUpdate)) < 3600000).length === 0 && (
+                      <div style={{color: '#555', fontSize: '10px', padding: '5px'}}>NO ACTIVE UNITS IN RANGE</div>
+                  )}
+              </div>
+              <button onClick={handleLogout} className="logout-btn" style={{marginTop: '10px', width: '100%', fontSize: '10px'}}>[ EXIT SYSTEM ]</button>
           </div>
           
           {/* Bottom Toolbar (Mobile Friendly) */}
