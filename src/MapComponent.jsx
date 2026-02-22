@@ -41,18 +41,18 @@ const squadIcon = L.divIcon({
   iconAnchor: [15, 15]
 });
 
-// Target Icon (White Crosshair)
+// Target Icon (White Crosshair - Code Black to appear White)
 const targetIcon = L.divIcon({
   className: 'target-marker',
   html: `
     <div style="
       width: 20px; height: 20px; 
-      border: 2px solid #ffffff; 
+      border: 2px solid #000000; 
       border-radius: 50%; 
-      background: rgba(255, 255, 255, 0.3);
-      box-shadow: 0 0 10px #ffffff;
+      background: rgba(0, 0, 0, 0.3);
+      box-shadow: 0 0 10px #000000;
       position: relative;">
-      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #ffffff;"></div>
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: #000000;"></div>
     </div>
   `,
   iconSize: [20, 20],
@@ -358,25 +358,25 @@ const MapComponent = ({ session }) => {
           </Marker>
         )}
 
-        {/* My Mission Route (White) */}
+        {/* My Mission Route (White - Code Black) */}
         {myRoutePath && (
             <>
                 {/* Glow Effect Layer */}
                 <Polyline 
                     positions={myRoutePath}
-                    pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.3 }}
+                    pathOptions={{ color: '#000000', weight: 8, opacity: 0.3 }}
                 />
                 {/* Main Line Layer */}
                 <Polyline 
                     positions={myRoutePath}
-                    pathOptions={{ color: '#ffffff', weight: 4, opacity: 1 }}
+                    pathOptions={{ color: '#000000', weight: 4, opacity: 1 }}
                 >
                      <Tooltip sticky className="mission-tooltip">MISSION PATH</Tooltip>
                 </Polyline>
                 <Marker position={myRoutePath[myRoutePath.length - 1]} icon={targetIcon}>
                     <Popup>
-                        <div className="hacker-popup" style={{borderColor: '#ffffff'}}>
-                            <h3 style={{color: '#ffffff', borderColor: '#ffffff'}}>MISSION TARGET</h3>
+                        <div className="hacker-popup" style={{borderColor: '#000000'}}>
+                            <h3 style={{color: '#000000', borderColor: '#000000'}}>MISSION TARGET</h3>
                         </div>
                     </Popup>
                 </Marker>
@@ -403,11 +403,11 @@ const MapComponent = ({ session }) => {
                         </Polyline>
                     )}
 
-                    {/* Squad Member's Mission Route (White - If they have one) */}
+                    {/* Squad Member's Mission Route (White - Code Black) */}
                     {data.route_path && (
                         <Polyline 
                             positions={data.route_path}
-                            pathOptions={{ color: '#ffffff', weight: 3, opacity: 0.8, dashArray: '5, 5' }}
+                            pathOptions={{ color: '#000000', weight: 3, opacity: 0.8, dashArray: '5, 5' }}
                         >
                              <Tooltip sticky className="mission-tooltip">{id}'s MISSION</Tooltip>
                         </Polyline>
