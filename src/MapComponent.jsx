@@ -475,25 +475,25 @@ const MapComponent = ({ session }) => {
             </div>
         )}
 
-        {/* My Mission Route (White - Code Black) */}
+        {/* My Mission Route (White on Map - Code Black) */}
         {myRoutePath && (
             <>
                 {/* Glow Effect Layer */}
                 <Polyline 
                     positions={myRoutePath}
-                    pathOptions={{ color: '#ffffff', weight: 8, opacity: 0.3 }}
+                    pathOptions={{ color: '#000000', weight: 8, opacity: 0.3 }}
                 />
                 {/* Main Line Layer */}
                 <Polyline 
                     positions={myRoutePath}
-                    pathOptions={{ color: '#ffffff', weight: 4, opacity: 1 }}
+                    pathOptions={{ color: '#000000', weight: 4, opacity: 1 }}
                 >
                      <Tooltip sticky className="mission-tooltip">MISSION PATH</Tooltip>
                 </Polyline>
                 <Marker position={myRoutePath[myRoutePath.length - 1]} icon={targetIcon}>
                     <Popup>
-                        <div className="hacker-popup" style={{borderColor: '#ffffff'}}>
-                            <h3 style={{color: '#ffffff', borderColor: '#ffffff'}}>MISSION TARGET</h3>
+                        <div className="hacker-popup" style={{borderColor: '#000000'}}>
+                            <h3 style={{color: '#000000', borderColor: '#000000'}}>MISSION TARGET</h3>
                         </div>
                     </Popup>
                 </Marker>
@@ -504,6 +504,9 @@ const MapComponent = ({ session }) => {
         {Object.entries(squadMembers).map(([id, data]) => {
             // Check if member is online (updated in last 2 minutes)
             const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
+
+            // Only show online members
+            if (!isMemberOnline) return null;
 
             const distance = userLocation 
                  ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
@@ -523,11 +526,11 @@ const MapComponent = ({ session }) => {
                     </Polyline>
                 )}
 
-                <Marker position={[data.lat, data.lng]} icon={squadIcon} opacity={isMemberOnline ? 1 : 0.5}>
+                <Marker position={[data.lat, data.lng]} icon={squadIcon} opacity={1}>
                   <Popup>
                     <div className="hacker-popup">
                       <h3>UNIT: {id}</h3>
-                      <p>STATUS: {isMemberOnline ? 'ONLINE' : 'OFFLINE'}</p>
+                      <p>STATUS: ONLINE</p>
                       <p>LAST SEEN: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
                       <p>DIST: {distance}m</p>
                       <p>LAT: {data.lat.toFixed(4)}</p>
@@ -535,14 +538,22 @@ const MapComponent = ({ session }) => {
                     </div>
                   </Popup>
                 </Marker>
-                {/* Show Squad Route if available AND Online */}
-                {data.route_path && isMemberOnline && (
-                    <Polyline 
-                        positions={data.route_path}
-                        pathOptions={{ color: '#ffffff', weight: 2, dashArray: '5, 10', opacity: 0.7 }}
-                    >
-                        <Tooltip sticky className="tactical-tooltip">UNIT {id} PATH</Tooltip>
-                    </Polyline>
+                {/* Show Squad Route (Glowing White on Inverted Map -> Black Code) */}
+                {data.route_path && (
+                    <>
+                        {/* Glow Effect Layer */}
+                        <Polyline 
+                            positions={data.route_path}
+                            pathOptions={{ color: '#000000', weight: 6, opacity: 0.3 }}
+                        />
+                        {/* Main Line Layer */}
+                        <Polyline 
+                            positions={data.route_path}
+                            pathOptions={{ color: '#000000', weight: 3, opacity: 0.9 }}
+                        >
+                            <Tooltip sticky className="tactical-tooltip">UNIT {id} PATH</Tooltip>
+                        </Polyline>
+                    </>
                 )}
                 {/* Show Squad Target if available */}
                 {data.target_lat && (
