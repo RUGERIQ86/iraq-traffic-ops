@@ -316,6 +316,10 @@ body {
   filter: invert(100%) hue-rotate(180deg) brightness(0.95) contrast(90%);
 }
 
+.crosshair-cursor {
+  cursor: crosshair !important;
+}
+
 /* HUD Overlay */
 .hud-overlay {
   position: absolute;
@@ -461,4 +465,19 @@ body {
 
 .tactical-tooltip::before {
   border-top-color: #00ff00 !important;
+}
+
+/* Mission Tooltip */
+.mission-tooltip {
+  background: #000 !important;
+  border: 2px solid orange !important;
+  color: orange !important;
+  font-family: 'Courier New', Courier, monospace !important;
+  font-size: 12px !important;
+  font-weight: bold !important;
+  padding: 2px 5px !important;
+}
+
+.mission-tooltip::before {
+  border-top-color: orange !important;
 }

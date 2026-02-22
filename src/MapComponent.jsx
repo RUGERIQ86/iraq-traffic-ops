@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, Polyline, Tooltip, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { supabase } from './supabaseClient';
@@ -39,6 +39,24 @@ const squadIcon = L.divIcon({
   `,
   iconSize: [30, 30],
   iconAnchor: [15, 15]
+});
+
+// Target Icon (Orange Crosshair)
+const targetIcon = L.divIcon({
+  className: 'target-marker',
+  html: `
+    <div style="
+      width: 20px; height: 20px; 
+      border: 2px solid orange; 
+      border-radius: 50%; 
+      background: rgba(255, 165, 0, 0.3);
+      box-shadow: 0 0 10px orange;
+      position: relative;">
+      <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; background: orange;"></div>
+    </div>
+  `,
+  iconSize: [20, 20],
+  iconAnchor: [10, 10]
 });
 
 // Calculate distance between two points in meters
@@ -106,6 +124,18 @@ const MapFlyTo = ({ position }) => {
   return null;
 };
 
+// Component to handle map clicks for targeting
+const MapClickHandler = ({ isTargetMode, onTargetSet }) => {
+  useMapEvents({
+    click(e) {
+      if (isTargetMode) {
+        onTargetSet(e.latlng);
+      }
+    },
+  });
+  return null;
+};
+
 const MapComponent = ({ session }) => {
   // Default: Baghdad Coordinates
   const [position, setPosition] = useState([33.3152, 44.3661]);
@@ -117,8 +147,13 @@ const MapComponent = ({ session }) => {
   // Multi-user State
   const [myUnitId, setMyUnitId] = useState('');
   const [targetIdInput, setTargetIdInput] = useState('');
-  const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate } }
+  const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate, route_path, target_lat, target_lng } }
   const [isOnline, setIsOnline] = useState(false);
+
+  // Mission/Target State
+  const [isTargetMode, setIsTargetMode] = useState(false);
+  const [myTarget, setMyTarget] = useState(null); // { lat, lng }
+  const [myRoutePath, setMyRoutePath] = useState(null); // Array of [lat, lng]
 
   // Use Email as Unit ID (or part of it)
   useEffect(() => {
@@ -143,20 +178,29 @@ const MapComponent = ({ session }) => {
     handleLocateMe();
   }, []);
 
-  // Real-time Location Sync Logic
+  // Real-time Location Sync Logic (Includes Route)
   useEffect(() => {
     if (!userLocation || !supabase || !myUnitId) return;
 
     const syncLocation = async () => {
       try {
-        const { error } = await supabase
-          .from('locations')
-          .upsert({ 
+        const payload = { 
             unit_id: myUnitId, 
             lat: userLocation[0], 
             lng: userLocation[1],
             last_updated: new Date().toISOString()
-          });
+        };
+
+        // If we have a target/route, sync that too
+        if (myTarget) {
+            payload.target_lat = myTarget.lat;
+            payload.target_lng = myTarget.lng;
+            payload.route_path = myRoutePath;
+        }
+
+        const { error } = await supabase
+          .from('locations')
+          .upsert(payload);
         
         if (error) console.error('Sync Error:', error);
         else setIsOnline(true);
@@ -170,7 +214,7 @@ const MapComponent = ({ session }) => {
     syncLocation();
     const interval = setInterval(syncLocation, 10000);
     return () => clearInterval(interval);
-  }, [userLocation, myUnitId]);
+  }, [userLocation, myUnitId, myTarget, myRoutePath]);
 
   // Subscribe to Squad Updates
   useEffect(() => {
@@ -179,11 +223,18 @@ const MapComponent = ({ session }) => {
     const channel = supabase
       .channel('public:locations')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'locations' }, (payload) => {
-        const { unit_id, lat, lng } = payload.new;
+        const { unit_id, lat, lng, route_path, target_lat, target_lng } = payload.new;
         if (unit_id !== myUnitId) {
             setSquadMembers(prev => ({
                 ...prev,
-                [unit_id]: { lat, lng, lastUpdate: new Date() }
+                [unit_id]: { 
+                    lat, 
+                    lng, 
+                    lastUpdate: new Date(),
+                    route_path, // Receive route from others
+                    target_lat,
+                    target_lng
+                }
             }));
         }
       })
@@ -219,12 +270,10 @@ const MapComponent = ({ session }) => {
 
   const handleAddTarget = () => {
     if (!targetIdInput) return;
-    // In a real app, we would verify the ID exists.
-    // For now, we just add it to our "watch list" visually
     setStatusMsg(`LINKING TO UNIT: ${targetIdInput}...`);
     setTimeout(() => {
         setStatusMsg(`LINK ESTABLISHED: ${targetIdInput}`);
-        // Simulate finding them for demo purposes if no backend
+        // Demo fallback
         if (!supabase) {
             const demoLat = userLocation ? userLocation[0] + 0.005 : 33.3200;
             const demoLng = userLocation ? userLocation[1] + 0.005 : 44.3700;
@@ -240,11 +289,60 @@ const MapComponent = ({ session }) => {
     await supabase.auth.signOut();
   };
 
+  // Handle setting a mission target
+  const handleSetMissionTarget = async (latlng) => {
+    setIsTargetMode(false);
+    setMyTarget(latlng);
+    setStatusMsg('CALCULATING ROUTE...');
+
+    if (!userLocation) {
+        setStatusMsg('ERR: NO START POS');
+        return;
+    }
+
+    // Fetch Route from OSRM
+    try {
+        const start = `${userLocation[1]},${userLocation[0]}`; // lng,lat
+        const end = `${latlng.lng},${latlng.lat}`;
+        const url = `https://router.project-osrm.org/route/v1/driving/${start};${end}?overview=full&geometries=geojson`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.routes && data.routes.length > 0) {
+            // OSRM returns [lng, lat], Leaflet needs [lat, lng]
+            const routeCoords = data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+            setMyRoutePath(routeCoords);
+            setStatusMsg('MISSION ROUTE SET');
+        } else {
+            setStatusMsg('ERR: NO ROUTE FOUND');
+            // Fallback to straight line
+            setMyRoutePath([userLocation, [latlng.lat, latlng.lng]]);
+        }
+    } catch (error) {
+        console.error("Routing Error:", error);
+        setStatusMsg('ERR: ROUTING FAILED');
+        setMyRoutePath([userLocation, [latlng.lat, latlng.lng]]);
+    }
+  };
+
+  const clearMission = () => {
+      setMyTarget(null);
+      setMyRoutePath(null);
+      setStatusMsg('MISSION ABORTED');
+  };
+
   return (
     <div className="map-wrapper">
-      <MapContainer center={position} zoom={13} scrollWheelZoom={true} className="leaflet-map">
+      <MapContainer 
+        center={position} 
+        zoom={13} 
+        scrollWheelZoom={true} 
+        className={`leaflet-map ${isTargetMode ? 'crosshair-cursor' : ''}`}
+      >
         <TrafficLayer />
         <MapFlyTo position={position} />
+        <MapClickHandler isTargetMode={isTargetMode} onTargetSet={handleSetMissionTarget} />
 
         {/* User Location Marker (Red Radiation) */}
         {userLocation && (
@@ -260,6 +358,25 @@ const MapComponent = ({ session }) => {
           </Marker>
         )}
 
+        {/* My Mission Route (Orange) */}
+        {myRoutePath && (
+            <>
+                <Polyline 
+                    positions={myRoutePath}
+                    pathOptions={{ color: 'orange', weight: 4, opacity: 0.8, dashArray: '10, 10' }}
+                >
+                     <Tooltip sticky className="mission-tooltip">MISSION PATH</Tooltip>
+                </Polyline>
+                <Marker position={myRoutePath[myRoutePath.length - 1]} icon={targetIcon}>
+                    <Popup>
+                        <div className="hacker-popup" style={{borderColor: 'orange'}}>
+                            <h3 style={{color: 'orange', borderColor: 'orange'}}>MISSION TARGET</h3>
+                        </div>
+                    </Popup>
+                </Marker>
+            </>
+        )}
+
         {/* Squad Markers & Tactical Lines */}
         {Object.entries(squadMembers).map(([id, data]) => {
             const distance = userLocation 
@@ -268,7 +385,7 @@ const MapComponent = ({ session }) => {
             
             return (
                 <div key={id}>
-                    {/* Tactical Line */}
+                    {/* Tactical Line (Green - Link) */}
                     {userLocation && (
                         <Polyline 
                             positions={[userLocation, [data.lat, data.lng]]}
@@ -278,6 +395,20 @@ const MapComponent = ({ session }) => {
                                 {id} | {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
                             </Tooltip>
                         </Polyline>
+                    )}
+
+                    {/* Squad Member's Mission Route (Orange - If they have one) */}
+                    {data.route_path && (
+                        <Polyline 
+                            positions={data.route_path}
+                            pathOptions={{ color: 'orange', weight: 2, opacity: 0.6, dashArray: '5, 5' }}
+                        >
+                             <Tooltip sticky className="mission-tooltip">{id}'s MISSION</Tooltip>
+                        </Polyline>
+                    )}
+                    {/* Squad Member's Target Marker */}
+                    {data.target_lat && (
+                         <Marker position={[data.target_lat, data.target_lng]} icon={targetIcon} />
                     )}
 
                     {/* Squad Marker */}
@@ -296,7 +427,7 @@ const MapComponent = ({ session }) => {
             );
         })}
 
-        {/* Default Baghdad Marker (only if user location not set yet) */}
+        {/* Default Baghdad Marker */}
         {!userLocation && (
             <Marker position={[33.3152, 44.3661]}>
             <Popup>
@@ -325,7 +456,43 @@ const MapComponent = ({ session }) => {
         <div className="top-left">
             <div>SYS.OP: {isOnline ? 'CONNECTED' : 'OFFLINE'}</div>
             <div>UNIT_ID: <span style={{color: '#00ff00', fontWeight: 'bold'}}>{myUnitId}</span></div>
+            
+            {/* Mission Controls */}
+            <div style={{marginTop: '15px'}}>
+                <button 
+                    onClick={() => setIsTargetMode(!isTargetMode)}
+                    style={{
+                        background: isTargetMode ? 'orange' : 'rgba(0,0,0,0.8)',
+                        color: isTargetMode ? 'black' : 'orange',
+                        border: '1px solid orange',
+                        padding: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        width: '100%',
+                        marginBottom: '5px'
+                    }}
+                >
+                    {isTargetMode ? '[ SELECT ON MAP ]' : '[ SET MISSION TARGET ]'}
+                </button>
+                {myTarget && (
+                    <button 
+                        onClick={clearMission}
+                        style={{
+                            background: 'rgba(255,0,0,0.2)',
+                            color: 'red',
+                            border: '1px solid red',
+                            padding: '5px',
+                            cursor: 'pointer',
+                            width: '100%',
+                            fontSize: '10px'
+                        }}
+                    >
+                        [ ABORT MISSION ]
+                    </button>
+                )}
+            </div>
         </div>
+
         <div className="top-right">
             <div>LOC: {userLocation ? 'SECURE' : 'SEARCHING...'}</div>
             <div>SQUAD: {Object.keys(squadMembers).length} UNITS</div>
@@ -386,8 +553,8 @@ const MapComponent = ({ session }) => {
             <div>SEC_LEVEL: 5</div>
         </div>
         
-        {/* Center Crosshair */}
-        <div className="crosshair"></div>
+        {/* Center Crosshair (Hidden in Target Mode) */}
+        {!isTargetMode && <div className="crosshair"></div>}
 
         {/* Locate Button */}
         <button className="locate-btn" onClick={handleLocateMe}>
