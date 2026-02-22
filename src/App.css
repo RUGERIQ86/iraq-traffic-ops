@@ -750,23 +750,25 @@ body {
 /* Chat Styles */
 .chat-toggle-btn {
   position: fixed;
-  bottom: calc(10vh + env(safe-area-inset-bottom));
+  bottom: calc(12vh + env(safe-area-inset-bottom)); /* Raised slightly */
   right: 20px;
   background: black;
   color: #00ff00;
   border: 1px solid #00ff00;
-  padding: 10px 15px;
+  padding: 12px 18px; /* Larger touch target */
   font-family: 'Courier New', Courier, monospace;
   font-weight: bold;
   cursor: pointer;
-  z-index: 2500;
+  z-index: 3000; /* Higher than everything else */
   box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
   transition: all 0.3s;
+  font-size: 16px; /* Readable font size */
 }
 
 .chat-toggle-btn:hover {
   background: #003300;
   box-shadow: 0 0 20px #00ff00;
+  transform: scale(1.05);
 }
 
 .unread-pulse {
@@ -781,7 +783,7 @@ body {
 
 .chat-window {
   position: fixed;
-  bottom: calc(16vh + env(safe-area-inset-bottom));
+  bottom: calc(18vh + env(safe-area-inset-bottom)); /* Adjusted to sit above button */
   right: 20px;
   width: 300px;
   height: 400px;
@@ -789,8 +791,9 @@ body {
   border: 2px solid #00ff00;
   display: flex;
   flex-direction: column;
-  z-index: 2500;
+  z-index: 3000; /* Same high z-index */
   box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+  border-radius: 5px;
 }
 
 .chat-header {
@@ -912,6 +915,28 @@ body {
     width: 90%;
     right: 5%;
     height: 50vh;
+    bottom: calc(20vh + env(safe-area-inset-bottom)); /* Ensure it doesn't overlap toolbar */
+  }
+
+  .chat-toggle-btn {
     bottom: calc(12vh + env(safe-area-inset-bottom));
+    right: 10px;
+    padding: 10px 15px;
+    font-size: 14px;
+  }
+
+  .bottom-toolbar {
+    flex-wrap: wrap; /* Allow wrapping if needed */
+    justify-content: center;
+    gap: 5px;
+    padding: 5px 0;
+  }
+
+  .toolbar-btn {
+    flex: 0 0 auto; /* Don't force stretch */
+    width: 30%; /* 3 buttons per row approx */
+    margin: 2px;
+    font-size: 12px;
+    padding: 8px 5px;
   }
 }
