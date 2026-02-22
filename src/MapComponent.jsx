@@ -195,15 +195,12 @@ const MapComponent = ({ session }) => {
             unit_id: myUnitId, 
             lat: userLocation[0], 
             lng: userLocation[1],
-            last_updated: new Date().toISOString()
+            last_updated: new Date().toISOString(),
+            // Explicitly set to null if undefined to clear them in DB
+            target_lat: myTarget ? myTarget.lat : null,
+            target_lng: myTarget ? myTarget.lng : null,
+            route_path: myRoutePath ? myRoutePath : null
         };
-
-        // If we have a target/route, sync that too
-        if (myTarget) {
-            payload.target_lat = myTarget.lat;
-            payload.target_lng = myTarget.lng;
-            payload.route_path = myRoutePath;
-        }
 
         const { error } = await supabase
           .from('locations')
@@ -505,15 +502,31 @@ const MapComponent = ({ session }) => {
         {Object.entries(squadMembers).map(([id, data]) => {
             // Check if member is online (updated in last 2 minutes)
             const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
+            const distance = userLocation 
+                 ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
+                 : 0;
             
             return (
               <div key={id}>
+                {/* Tactical Line (Green - Link) */}
+                {userLocation && (
+                    <Polyline 
+                        positions={[userLocation, [data.lat, data.lng]]}
+                        pathOptions={{ color: '#00ff00', weight: 1, opacity: 0.4, dashArray: '5, 10' }}
+                    >
+                        <Tooltip permanent direction="center" className="tactical-tooltip" opacity={0.7}>
+                            {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
+                        </Tooltip>
+                    </Polyline>
+                )}
+
                 <Marker position={[data.lat, data.lng]} icon={squadIcon} opacity={isMemberOnline ? 1 : 0.5}>
                   <Popup>
                     <div className="hacker-popup">
                       <h3>UNIT: {id}</h3>
                       <p>STATUS: {isMemberOnline ? 'ONLINE' : 'OFFLINE'}</p>
                       <p>LAST SEEN: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
+                      <p>DIST: {distance}m</p>
                       <p>LAT: {data.lat.toFixed(4)}</p>
                       <p>LNG: {data.lng.toFixed(4)}</p>
                     </div>
