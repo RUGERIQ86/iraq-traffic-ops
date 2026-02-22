@@ -502,14 +502,19 @@ const MapComponent = ({ session }) => {
         {Object.entries(squadMembers).map(([id, data]) => {
             // Check if member is online (updated in last 2 minutes)
             const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
+            // Hide members offline for more than 1 hour
+            const isMemberVisible = (new Date() - new Date(data.lastUpdate)) < 3600000;
+
+            if (!isMemberVisible) return null;
+
             const distance = userLocation 
                  ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
                  : 0;
             
             return (
               <div key={id}>
-                {/* Tactical Line (Green - Link) */}
-                {userLocation && (
+                {/* Tactical Line (Green - Link) - Only if Online */}
+                {userLocation && isMemberOnline && (
                     <Polyline 
                         positions={[userLocation, [data.lat, data.lng]]}
                         pathOptions={{ color: '#00ff00', weight: 1, opacity: 0.4, dashArray: '5, 10' }}
@@ -532,8 +537,8 @@ const MapComponent = ({ session }) => {
                     </div>
                   </Popup>
                 </Marker>
-                {/* Show Squad Route if available */}
-                {data.route_path && (
+                {/* Show Squad Route if available AND Online */}
+                {data.route_path && isMemberOnline && (
                     <Polyline 
                         positions={data.route_path}
                         pathOptions={{ color: '#00ff00', weight: 2, dashArray: '5, 10', opacity: 0.6 }}
@@ -541,8 +546,8 @@ const MapComponent = ({ session }) => {
                         <Tooltip sticky className="tactical-tooltip">UNIT {id} PATH</Tooltip>
                     </Polyline>
                 )}
-                {/* Show Squad Target if available */}
-                {data.target_lat && (
+                {/* Show Squad Target if available AND Online */}
+                {data.target_lat && isMemberOnline && (
                     <Marker position={[data.target_lat, data.target_lng]} icon={targetIcon} opacity={0.7}>
                          <Tooltip sticky className="tactical-tooltip">UNIT {id} TARGET</Tooltip>
                     </Marker>
@@ -603,7 +608,7 @@ const MapComponent = ({ session }) => {
           </div>
 
           <div className="top-right">
-              <div>SQUAD: {Object.keys(squadMembers).length}</div>
+              <div>SQUAD: {Object.values(squadMembers).filter(m => (new Date() - new Date(m.lastUpdate)) < 3600000).length}</div>
               <button onClick={handleLogout} className="logout-btn">[ EXIT ]</button>
           </div>
           
