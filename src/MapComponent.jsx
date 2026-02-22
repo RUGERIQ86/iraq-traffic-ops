@@ -159,6 +159,7 @@ const MapComponent = ({ session }) => {
   // Mission/Target State
   const [isTargetMode, setIsTargetMode] = useState(false);
   const [myTarget, setMyTarget] = useState(null); // { lat, lng }
+  const [myTargetName, setMyTargetName] = useState('MISSION TARGET'); // New state for target name
   const [myRoutePath, setMyRoutePath] = useState(null); // Array of [lat, lng]
   const [candidateRoutes, setCandidateRoutes] = useState([]); // Array of route objects
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
@@ -336,9 +337,10 @@ const MapComponent = ({ session }) => {
   };
 
   // Handle setting a mission target
-  const handleSetMissionTarget = async (latlng) => {
+  const handleSetMissionTarget = async (latlng, name = 'MISSION TARGET') => {
     setIsTargetMode(false);
     setMyTarget(latlng);
+    setMyTargetName(name); // Store target name
     setCandidateRoutes([]); // Clear previous candidates
     setMyRoutePath(null); // Clear current path
     setStatusMsg('CALCULATING TACTICAL ROUTES...');
@@ -455,7 +457,7 @@ const MapComponent = ({ session }) => {
       setSearchQuery(''); 
       
       // Set as Mission Target and Calculate Route
-      handleSetMissionTarget({ lat, lng: lon });
+      handleSetMissionTarget({ lat, lng: lon }, result.display_name.split(',')[0]);
       
       setStatusMsg(`TARGET LOCKED: ${result.display_name.split(',')[0]}`);
   };
@@ -627,8 +629,31 @@ const MapComponent = ({ session }) => {
                 </Polyline>
                 <Marker position={myRoutePath[myRoutePath.length - 1]} icon={targetIcon}>
                     <Popup>
-                        <div className="hacker-popup" style={{borderColor: '#000000'}}>
-                            <h3 style={{color: '#000000', borderColor: '#000000'}}>MISSION TARGET</h3>
+                        <div className="hacker-popup" style={{
+                            borderColor: '#00ffff',
+                            backgroundColor: '#000000', // Black background
+                            color: '#00ffff',           // Cyan text
+                            // IMPORTANT: Reverse the map's filter so colors are true
+                            filter: 'invert(100%) hue-rotate(180deg)',
+                            boxShadow: '0 0 10px #00ffff',
+                            padding: '10px',
+                            minWidth: '150px'
+                        }}>
+                            <h3 style={{
+                                color: '#00ffff', 
+                                borderColor: '#00ffff',
+                                borderBottom: '1px solid #00ffff',
+                                paddingBottom: '5px',
+                                marginBottom: '5px',
+                                fontSize: '14px',
+                                textAlign: 'center',
+                                textTransform: 'uppercase'
+                            }}>{myTargetName}</h3>
+                            <div style={{fontSize: '10px', color: '#ffffff'}}>
+                                <p style={{margin: '2px 0'}}>STATUS: LOCKED</p>
+                                <p style={{margin: '2px 0'}}>LAT: {myRoutePath[myRoutePath.length - 1][0].toFixed(4)}</p>
+                                <p style={{margin: '2px 0'}}>LNG: {myRoutePath[myRoutePath.length - 1][1].toFixed(4)}</p>
+                            </div>
                         </div>
                     </Popup>
                 </Marker>
