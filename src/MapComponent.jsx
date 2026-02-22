@@ -164,6 +164,11 @@ const MapComponent = ({ session }) => {
   const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [showLinkModal, setShowLinkModal] = useState(false); // New state for Link Modal
 
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+
   // Use Email as Unit ID (or part of it)
   useEffect(() => {
     if (session?.user?.email) {
@@ -395,6 +400,58 @@ const MapComponent = ({ session }) => {
       setStatusMsg('MISSION ABORTED');
   };
 
+  // Search Logic with Debounce
+  const performSearch = async (query) => {
+    setIsSearching(true);
+    setStatusMsg(`SCANNING: ${query.toUpperCase()}...`);
+
+    try {
+        let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&accept-language=ar`;
+        
+        // Add proximity bias if user location is known
+        if (userLocation) {
+            // Create a bounding box of roughly 50km around user
+            // 1 degree lat approx 111km
+            const boxSize = 0.5; 
+            const viewbox = `${userLocation[1]-boxSize},${userLocation[0]+boxSize},${userLocation[1]+boxSize},${userLocation[0]-boxSize}`;
+            url += `&viewbox=${viewbox}&bounded=1`;
+        }
+
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        setSearchResults(data);
+        if (data.length === 0) {
+            setStatusMsg('NO TARGETS FOUND');
+        }
+    } catch (error) {
+        console.error("Search Error:", error);
+    } finally {
+        setIsSearching(false);
+    }
+  };
+
+  useEffect(() => {
+      const delayDebounceFn = setTimeout(() => {
+        if (searchQuery.length > 2) {
+          performSearch(searchQuery);
+        } else {
+            setSearchResults([]);
+        }
+      }, 800); // 800ms delay to avoid spamming API
+
+      return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  const selectSearchResult = (result) => {
+      const lat = parseFloat(result.lat);
+      const lon = parseFloat(result.lon);
+      setPosition([lat, lon]); // Fly to location
+      setSearchResults([]); // Clear results
+      setSearchQuery(''); // Clear query
+      setStatusMsg(`TARGET ACQUIRED: ${result.display_name.split(',')[0]}`);
+  };
+
   return (
     <div className="map-wrapper">
       <MapContainer 
@@ -406,6 +463,76 @@ const MapComponent = ({ session }) => {
         <TrafficLayer />
         <MapFlyTo position={position} />
         <MapClickHandler isTargetMode={isTargetMode} onTargetSet={handleSetMissionTarget} />
+
+        {/* Search Bar */}
+        <div style={{
+            position: 'absolute', 
+            top: '20px', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 3000,
+            width: '80%',
+            maxWidth: '400px',
+            pointerEvents: 'auto'
+        }}>
+            <input 
+                type="text" 
+                placeholder="[ SEARCH SECTOR... ]" 
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                    width: '100%',
+                    padding: '12px',
+                    background: 'rgba(0, 0, 0, 0.85)',
+                    border: '2px solid #00ffff',
+                    color: '#00ffff',
+                    fontFamily: 'Courier New',
+                    fontWeight: 'bold',
+                    outline: 'none',
+                    boxShadow: '0 0 15px rgba(0, 255, 255, 0.3)',
+                    textAlign: 'center',
+                    textTransform: 'uppercase'
+                }}
+            />
+            {/* Search Results Dropdown */}
+            {searchResults.length > 0 && (
+                <div style={{
+                    background: 'rgba(0, 0, 0, 0.95)',
+                    border: '1px solid #00ffff',
+                    marginTop: '5px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    boxShadow: '0 0 20px rgba(0, 0, 0, 0.8)'
+                }}>
+                    {searchResults.map((result, idx) => (
+                        <div 
+                            key={idx}
+                            onClick={() => selectSearchResult(result)}
+                            style={{
+                                padding: '12px',
+                                color: '#fff',
+                                borderBottom: '1px solid #003333',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontFamily: 'Courier New',
+                                textAlign: 'left',
+                                direction: 'rtl'
+                            }}
+                            onMouseEnter={(e) => {
+                                e.target.style.background = '#00ffff';
+                                e.target.style.color = '#000';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.background = 'transparent';
+                                e.target.style.color = '#fff';
+                            }}
+                        >
+                            {result.display_name}
+                        </div>
+                    ))}
+                </div>
+            )}
+        </div>
 
         {/* User Location Marker (Red Radiation) */}
         {userLocation && (
