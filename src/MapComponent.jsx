@@ -272,7 +272,7 @@ const MapComponent = ({ session }) => {
                     {userLocation && (
                         <Polyline 
                             positions={[userLocation, [data.lat, data.lng]]}
-                            pathOptions={{ color: '#00ff00', weight: 1, dashArray: '5, 10', opacity: 0.6 }}
+                            pathOptions={{ color: '#00ff00', weight: 3, opacity: 1 }}
                         >
                             <Tooltip permanent direction="center" className="tactical-tooltip">
                                 {id} | {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
