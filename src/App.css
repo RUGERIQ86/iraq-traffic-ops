@@ -860,3 +860,40 @@ body {
 .message-content {
   font-size: 0.9em;
 }
+
+/* Tactical Logo Animation */
+.tactical-logo-container {
+  perspective: 1000px;
+}
+
+.tactical-logo {
+  animation: logo-float 4s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+  0% { transform: translateY(0) rotateX(0deg); }
+  50% { transform: translateY(-5px) rotateX(5deg); }
+  100% { transform: translateY(0) rotateX(0deg); }
+}
+
+.tactical-logo circle[r='30'] {
+  animation: radar-pulse 2s infinite;
+  transform-origin: center;
+}
+
+@keyframes radar-pulse {
+  0% { r: 30; opacity: 1; stroke-width: 2; }
+  50% { r: 35; opacity: 0.5; stroke-width: 1; }
+  100% { r: 30; opacity: 1; stroke-width: 2; }
+}
+
+.tactical-logo path[opacity='0.5'] {
+  animation: hex-spin 10s linear infinite;
+  transform-origin: center;
+}
+
+@keyframes hex-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
