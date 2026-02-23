@@ -26,13 +26,18 @@ function App() {
           // STRICT CHECK: Validate user with server to ensure they aren't deleted
           const { data: { user }, error: userError } = await supabase.auth.getUser();
           
-          if (userError || !user) {
+          // Only force logout if we are SURE the user is invalid (401/403 or null user)
+          if (!user || (userError && (userError.status === 401 || userError.status === 403 || userError.message.includes('bad request')))) {
             console.warn("User invalid or deleted from database. Forcing logout.");
             // Clear local storage explicitly to prevent loops
             localStorage.clear();
             await supabase.auth.signOut();
             setSession(null);
           } else {
+            // If it's a network error or other temporary issue, keep the session if it looks valid
+            if (userError) {
+                console.warn("getUser failed but session exists. Keeping session.", userError);
+            }
             setSession(session);
           }
         } else {
@@ -40,9 +45,8 @@ function App() {
         }
       } catch (err) {
         console.error("Auth Check Failed:", err);
-        // On error, clear session to allow re-login
+        // On error, set session to null but DO NOT clear local storage aggressively
         setSession(null);
-        localStorage.clear();
       } finally {
         clearTimeout(timeoutId);
         setLoading(false);
