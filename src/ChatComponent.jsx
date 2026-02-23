@@ -39,6 +39,20 @@ const ChatComponent = ({ myUnitId }) => {
   }, [messages, isOpen]);
 
   useEffect(() => {
+    // Auto-Destruct: Delete messages older than 1 hour
+    const cleanupOldMessages = async () => {
+      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .lt('created_at', oneHourAgo);
+      
+      if (error) console.warn("Chat cleanup warning (RLS might block delete):", error.message);
+    };
+
+    cleanupOldMessages();
+    const cleanupInterval = setInterval(cleanupOldMessages, 10 * 60 * 1000); // Check every 10 mins
+
     // Load initial messages
     const fetchMessages = async () => {
       const { data, error } = await supabase
@@ -79,6 +93,7 @@ const ChatComponent = ({ myUnitId }) => {
       });
 
     return () => {
+      clearInterval(cleanupInterval);
       supabase.removeChannel(channel);
     };
   }, [isOpen]);

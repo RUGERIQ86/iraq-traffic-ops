@@ -807,7 +807,7 @@ const MapComponent = ({ session }) => {
               <div style={{marginBottom: '5px', borderBottom: '1px solid #00ff00', fontSize: '12px', fontWeight: 'bold'}}>ACTIVE SQUAD UNITS</div>
               <div style={{maxHeight: '150px', overflowY: 'auto'}}>
                   {Object.entries(squadMembers)
-                      .filter(([id, m]) => (new Date() - new Date(m.lastUpdate)) < 3600000) // Online within 1 hour
+                      .filter(([id, m]) => (new Date() - new Date(m.lastUpdate)) < 60000) // Online within 1 minute (Fast Response)
                       .map(([id, m]) => {
                           const distance = userLocation 
                               ? calculateDistance(userLocation[0], userLocation[1], m.lat, m.lng) 
