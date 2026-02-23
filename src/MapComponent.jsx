@@ -508,8 +508,8 @@ const MapComponent = ({ session }) => {
             left: '50%', 
             transform: 'translateX(-50%)', 
             zIndex: 3000,
-            width: '80%',
-            maxWidth: '400px',
+            width: '50%',
+            maxWidth: '300px',
             pointerEvents: 'auto'
         }}>
             <input 
@@ -519,7 +519,8 @@ const MapComponent = ({ session }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                     width: '100%',
-                    padding: '12px',
+                    padding: '8px',
+                    fontSize: '14px',
                     background: 'rgba(0, 0, 0, 0.85)',
                     border: '2px solid #00ffff',
                     color: '#00ffff',
@@ -883,6 +884,16 @@ const MapComponent = ({ session }) => {
 
           <div className="status-bar">
               STATUS: {statusMsg}
+              <div style={{
+                  fontSize: '10px', 
+                  color: '#00ffff', 
+                  marginTop: '4px', 
+                  letterSpacing: '1px',
+                  fontWeight: 'bold',
+                  textShadow: '0 0 5px #00ffff'
+              }}>
+                  DEVELOPED BY RUGER IQ
+              </div>
           </div>
           
           {/* Center Crosshair (Hidden in Target Mode) */}
