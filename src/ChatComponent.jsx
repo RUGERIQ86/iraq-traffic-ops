@@ -123,6 +123,22 @@ const ChatComponent = ({ myUnitId }) => {
     }
   };
 
+  const handleClearChat = async () => {
+    if (window.confirm("WARNING: CLEAR ALL MESSAGES?")) {
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .neq('id', 0); // Delete all messages
+      
+      if (error) {
+        console.error("Clear error:", error);
+        alert("Failed to clear chat. RLS policy may deny DELETE.");
+      } else {
+        setMessages([]);
+      }
+    }
+  };
+
   return (
     <>
       {/* Chat Toggle Button */}
@@ -136,6 +152,15 @@ const ChatComponent = ({ myUnitId }) => {
       {/* Chat Window */}
       {isOpen && (
         <div className="chat-container">
+          <div style={{display: 'flex', justifyContent: 'space-between', padding: '5px', borderBottom: '1px solid #333', background: 'rgba(0,0,0,0.8)'}}>
+             <span style={{color: '#00ff00', fontSize: '12px'}}>SQUAD COMMS</span>
+             <button 
+               onClick={handleClearChat}
+               style={{background: 'red', color: 'white', border: 'none', fontSize: '10px', padding: '2px 5px', cursor: 'pointer'}}
+             >
+               CLEAR ALL
+             </button>
+          </div>
           <div className="chat-messages">
             {messages.map((msg, index) => (
               <div 
