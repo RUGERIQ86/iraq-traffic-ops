@@ -12,17 +12,33 @@ const Login = ({ onLogin }) => {
     setLoading(true);
     setError(null);
 
+    // Timeout to prevent infinite loading state
+    const timeoutId = setTimeout(() => {
+        setLoading(false);
+        setError('CONNECTION TIMEOUT. PLEASE TRY AGAIN.');
+    }, 10000); // 10 seconds
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
+      clearTimeout(timeoutId);
+
       if (error) throw error;
-      onLogin(data.session);
+      
+      // Explicitly check if session is valid
+      if (data?.session) {
+        onLogin(data.session);
+      } else {
+        throw new Error("NO SESSION RETURNED");
+      }
+
     } catch (err) {
-      setError(err.message);
-    } finally {
+      clearTimeout(timeoutId);
+      console.error("Login Error:", err);
+      setError(err.message || "AUTHENTICATION FAILED");
       setLoading(false);
     }
   };
