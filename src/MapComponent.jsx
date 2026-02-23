@@ -900,7 +900,7 @@ const MapComponent = ({ session }) => {
           {!isTargetMode && <div className="crosshair"></div>}
 
           {/* Chat Component */}
-          {myUnitId && <ChatComponent myUnitId={myUnitId} />}
+          {myUnitId && <ChatComponent myUnitId={myUnitId} session={session} />}
       </div>
     </div>
   );

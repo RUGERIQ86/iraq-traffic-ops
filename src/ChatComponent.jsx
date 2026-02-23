@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 
-const ChatComponent = ({ myUnitId }) => {
+const ChatComponent = ({ myUnitId, session }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const isAdmin = session?.user?.email === 'ruger@1.com';
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [hasUnread, setHasUnread] = useState(false);
@@ -148,26 +149,26 @@ const ChatComponent = ({ myUnitId }) => {
   };
 
   const handleClearChat = async () => {
-    if (window.confirm("WARNING: CLEAR CHAT FOR ALL USERS?")) {
-      // 1. Send GLOBAL CLEAR marker to database (hides history for everyone)
-      await supabase.from('messages').insert([{
-        unit_id: 'SYSTEM',
-        content: ':::CHAT_CLEARED_GLOBAL:::',
-        color: '#ff0000'
-      }]);
+    if (!isAdmin) return;
+    
+    if (window.confirm("WARNING: ADMIN CLEAR CHAT FOR ALL USERS?")) {
+      // 1. Delete all messages from DB (RLS will allow this for Admin)
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .neq('id', 0); 
 
-      // 2. Clear locally immediately
-      localStorage.setItem('chat_last_cleared', new Date().toISOString());
-      setMessages([]);
-      
-      // 3. Try to delete from DB (cleanup)
-      try {
-          await supabase
-            .from('messages')
-            .delete()
-            .neq('id', 0); 
-      } catch (err) {
-          console.warn("DB Clear failed (RLS restricted), but Global Marker sent.");
+      if (error) {
+          console.error("Admin Clear failed:", error.message);
+          alert("Clear failed: " + error.message);
+      } else {
+          // 2. Send System Marker
+          await supabase.from('messages').insert([{
+            unit_id: 'SYSTEM',
+            content: ':::CHAT_CLEARED_BY_ADMIN:::',
+            color: '#ff0000'
+          }]);
+          setMessages([]);
       }
     }
   };
@@ -187,12 +188,14 @@ const ChatComponent = ({ myUnitId }) => {
         <div className="chat-container">
           <div style={{display: 'flex', justifyContent: 'space-between', padding: '5px', borderBottom: '1px solid #333', background: 'rgba(0,0,0,0.8)'}}>
              <span style={{color: '#00ff00', fontSize: '12px'}}>SQUAD COMMS</span>
-             <button 
-               onClick={handleClearChat}
-               style={{background: 'red', color: 'white', border: 'none', fontSize: '10px', padding: '2px 5px', cursor: 'pointer'}}
-             >
-               CLEAR ALL
-             </button>
+             {isAdmin && (
+               <button 
+                 onClick={handleClearChat}
+                 style={{background: 'red', color: 'white', border: 'none', fontSize: '10px', padding: '2px 5px', cursor: 'pointer'}}
+               >
+                 ADMIN CLEAR
+               </button>
+             )}
           </div>
           <div className="chat-messages">
             {messages.map((msg, index) => (
