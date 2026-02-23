@@ -15,10 +15,15 @@ const Login = ({ onLogin }) => {
     // Timeout to prevent infinite loading state
     const timeoutId = setTimeout(() => {
         setLoading(false);
-        setError('CONNECTION TIMEOUT. PLEASE TRY AGAIN.');
-    }, 10000); // 10 seconds
+        setError('CONNECTION TIMEOUT. PLEASE CHECK YOUR INTERNET AND TRY AGAIN.');
+    }, 30000); // 30 seconds
 
     try {
+      // Check for internet connection first
+      if (!navigator.onLine) {
+        throw new Error("NO INTERNET CONNECTION");
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
