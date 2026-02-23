@@ -65,12 +65,25 @@ const ChatComponent = ({ myUnitId }) => {
         console.error("Chat Error (Fetching):", error.message);
         // Silent fail or minimal alert to avoid spamming user
       } else {
-        // Filter out messages cleared locally
+        // 1. Sort by time ascending to process timeline
+        let sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+        // 2. Check for GLOBAL CLEAR marker
+        const lastClearIndex = sortedData.map(m => m.content).lastIndexOf(':::CHAT_CLEARED_GLOBAL:::');
+        
+        // 3. Slice messages if a clear marker exists (hide everything before it)
+        if (lastClearIndex !== -1) {
+            sortedData = sortedData.slice(lastClearIndex + 1);
+        }
+
+        // 4. Filter out messages cleared locally (legacy/fallback)
         const lastCleared = localStorage.getItem('chat_last_cleared');
-        const filteredData = data.filter(msg => !lastCleared || new Date(msg.created_at) > new Date(lastCleared));
+        if (lastCleared) {
+            sortedData = sortedData.filter(msg => new Date(msg.created_at) > new Date(lastCleared));
+        }
         
         // Reverse to show oldest first (top) to newest (bottom)
-        setMessages(filteredData.reverse());
+        setMessages(sortedData);
       }
     };
 
@@ -84,6 +97,13 @@ const ChatComponent = ({ myUnitId }) => {
             console.error("Chat Error (Realtime):", payload.errors);
             return;
         }
+        
+        // Handle GLOBAL CLEAR command
+        if (payload.new.content === ':::CHAT_CLEARED_GLOBAL:::') {
+            setMessages([]); // Clear chat for everyone online
+            return;
+        }
+
         setMessages(prev => [...prev, payload.new]);
         if (!isOpen) {
           setHasUnread(true);
@@ -128,19 +148,26 @@ const ChatComponent = ({ myUnitId }) => {
   };
 
   const handleClearChat = async () => {
-    if (window.confirm("WARNING: CLEAR CHAT HISTORY (LOCAL)?")) {
-      // Clear locally by updating timestamp
+    if (window.confirm("WARNING: CLEAR CHAT FOR ALL USERS?")) {
+      // 1. Send GLOBAL CLEAR marker to database (hides history for everyone)
+      await supabase.from('messages').insert([{
+        unit_id: 'SYSTEM',
+        content: ':::CHAT_CLEARED_GLOBAL:::',
+        color: '#ff0000'
+      }]);
+
+      // 2. Clear locally immediately
       localStorage.setItem('chat_last_cleared', new Date().toISOString());
       setMessages([]);
       
-      // Optionally try to delete from DB (fail silently if not allowed)
+      // 3. Try to delete from DB (cleanup)
       try {
           await supabase
             .from('messages')
             .delete()
             .neq('id', 0); 
       } catch (err) {
-          console.warn("DB Clear failed (RLS restricted), but local clear succeeded.");
+          console.warn("DB Clear failed (RLS restricted), but Global Marker sent.");
       }
     }
   };
