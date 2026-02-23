@@ -12,43 +12,17 @@ const Login = ({ onLogin }) => {
     setLoading(true);
     setError(null);
 
-    // Timeout to prevent infinite loading state
-    const timeoutId = setTimeout(() => {
-        setLoading(false);
-        setError('CONNECTION TIMEOUT. SERVER UNREACHABLE. PLEASE TRY AGAIN OR CONTACT ADMIN.');
-    }, 45000); // 45 seconds
-
     try {
-      // Force clear any stale session data that might block login
-      localStorage.removeItem('sb-xsdfxjkiifitubeoimpv-auth-token'); 
-
-      // Check for internet connection first
-      if (!navigator.onLine) {
-        throw new Error("NO INTERNET CONNECTION");
-      }
-      
-      console.log("Attempting login to Supabase...");
-      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
-      clearTimeout(timeoutId);
-
       if (error) throw error;
-      
-      // Explicitly check if session is valid
-      if (data?.session) {
-        onLogin(data.session);
-      } else {
-        throw new Error("NO SESSION RETURNED");
-      }
-
+      onLogin(data.session);
     } catch (err) {
-      clearTimeout(timeoutId);
-      console.error("Login Error:", err);
-      setError(err.message || "AUTHENTICATION FAILED");
+      setError(err.message);
+    } finally {
       setLoading(false);
     }
   };
