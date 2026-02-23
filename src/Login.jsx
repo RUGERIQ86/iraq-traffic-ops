@@ -15,15 +15,20 @@ const Login = ({ onLogin }) => {
     // Timeout to prevent infinite loading state
     const timeoutId = setTimeout(() => {
         setLoading(false);
-        setError('CONNECTION TIMEOUT. PLEASE CHECK YOUR INTERNET AND TRY AGAIN.');
-    }, 30000); // 30 seconds
+        setError('CONNECTION TIMEOUT. SERVER UNREACHABLE. PLEASE TRY AGAIN OR CONTACT ADMIN.');
+    }, 45000); // 45 seconds
 
     try {
+      // Force clear any stale session data that might block login
+      localStorage.removeItem('sb-xsdfxjkiifitubeoimpv-auth-token'); 
+
       // Check for internet connection first
       if (!navigator.onLine) {
         throw new Error("NO INTERNET CONNECTION");
       }
-
+      
+      console.log("Attempting login to Supabase...");
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
