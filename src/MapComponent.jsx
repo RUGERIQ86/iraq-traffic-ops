@@ -80,6 +80,7 @@ const targetIcon = L.divIcon({
 
 // Calculate distance between two points in meters
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 0;
   const R = 6371e3; // Earth radius in meters
   const φ1 = lat1 * Math.PI / 180;
   const φ2 = lat2 * Math.PI / 180;
@@ -92,6 +93,23 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 
   return Math.round(R * c); // Distance in meters
+};
+
+// Logic to displace markers if they are too close (Spidering)
+const getDisplacedPos = (lat, lng, index, total, zoom) => {
+  if (total <= 1) return [lat, lng];
+  
+  // Angle for each marker in the circle
+  const angle = (index / total) * (2 * Math.PI);
+  
+  // Distance of displacement based on zoom level (more zoom = less physical distance)
+  // At zoom 15, 0.0001 is about 11 meters
+  const shift = 0.0002 / Math.pow(2, zoom - 15);
+  
+  const newLat = lat + (Math.cos(angle) * shift);
+  const newLng = lng + (Math.sin(angle) * shift);
+  
+  return [newLat, newLng];
 };
 
 // Component to handle traffic updates
@@ -191,6 +209,7 @@ const MapComponent = ({ session }) => {
   const [isTracking, setIsTracking] = useState(false);
   const [autoFollow, setAutoFollow] = useState(true); // New state for auto-following
   const [trackingUnitId, setTrackingUnitId] = useState(null); // ID of the unit currently being followed
+  const [currentZoom, setCurrentZoom] = useState(13); // Track zoom level for displacement logic
   const watchIdRef = useRef(null);
   const hasCenteredMap = useRef(false);
 
@@ -201,6 +220,9 @@ const MapComponent = ({ session }) => {
         setAutoFollow(false);
         setStatusMsg('MANUAL SCAN MODE');
       },
+      zoomend(e) {
+        setCurrentZoom(e.target.getZoom());
+      }
     });
     return null;
   };
@@ -742,14 +764,29 @@ const MapComponent = ({ session }) => {
         )}
 
         {/* Squad Members (Blue/Green Tactical) */}
-        {Object.entries(squadMembers).map(([id, data]) => {
+        {Object.entries(squadMembers).map(([id, data], index, array) => {
             // Check if member is online (updated in last 2 minutes)
             const isMemberOnline = (new Date() - new Date(data.lastUpdate)) < 120000;
 
             // Only show online members
             if (!isMemberOnline) return null;
 
-            const distance = userLocation 
+            // Collision Detection Logic
+            // Find how many members are at almost exactly the same spot
+            const closeMembers = array.filter(([otherId, otherData]) => {
+                const isOtherOnline = (new Date() - new Date(otherData.lastUpdate)) < 120000;
+                if (!isOtherOnline) return false;
+                const dist = calculateDistance(data.lat, data.lng, otherData.lat, otherData.lng);
+                return dist < 5; // within 5 meters
+            });
+
+            const myIndexInClose = closeMembers.findIndex(([cid]) => cid === id);
+            const totalClose = closeMembers.length;
+
+            // Displace position if there are multiple units in the same spot
+            const displayPos = getDisplacedPos(data.lat, data.lng, myIndexInClose, totalClose, currentZoom);
+
+            const distanceToMe = userLocation 
                  ? calculateDistance(userLocation[0], userLocation[1], data.lat, data.lng)
                  : 0;
             
@@ -758,29 +795,32 @@ const MapComponent = ({ session }) => {
                 {/* Tactical Line (Green - Link) - Always visible if user has location */}
                 {userLocation && (
                     <Polyline 
-                        positions={[userLocation, [data.lat, data.lng]]}
-                        pathOptions={{ color: '#00ff00', weight: 2, opacity: 0.8 }}
+                        positions={[userLocation, displayPos]}
+                        pathOptions={{ color: '#00ff00', weight: 1, opacity: 0.4, dashArray: '5, 5' }}
                     >
-                        <Tooltip permanent direction="center" className="tactical-tooltip" opacity={0.9}>
-                            {distance > 1000 ? (distance/1000).toFixed(1) + 'km' : distance + 'm'}
+                        <Tooltip permanent direction="center" className="tactical-tooltip" opacity={0.7}>
+                            {distanceToMe > 1000 ? (distanceToMe/1000).toFixed(1) + 'km' : distanceToMe + 'm'}
                         </Tooltip>
                     </Polyline>
                 )}
 
-                <Marker position={[data.lat, data.lng]} icon={getUnitIcon(data.unit_type || 'infantry', false)} opacity={1}>
+                <Marker position={displayPos} icon={getUnitIcon(data.unit_type || 'infantry', false)} opacity={1}>
+                  <Tooltip permanent direction="top" offset={[0, -20]} className="unit-label-tooltip">
+                    <span style={{color: getUserColor(id), fontWeight: 'bold'}}>{id}</span>
+                  </Tooltip>
                   <Popup>
                     <div className="hacker-popup">
                       <h3>UNIT: {id}</h3>
                       <p>TYPE: {(data.unit_type || 'infantry').toUpperCase()}</p>
                       <p>STATUS: ONLINE</p>
                       <p>LAST SEEN: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
-                      <p>DIST: {distance}m</p>
+                      <p>DIST: {distanceToMe}m</p>
                       <p>LAT: {data.lat.toFixed(4)}</p>
                       <p>LNG: {data.lng.toFixed(4)}</p>
                     </div>
                   </Popup>
                 </Marker>
-                {/* Show Squad Route (Glowing White on Inverted Map -> Black Code) */}
+                {/* Show Squad Route */}
                 {data.route_path && (
                     <>
                         {/* Glow Effect Layer */}
