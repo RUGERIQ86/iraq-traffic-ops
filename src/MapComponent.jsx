@@ -35,9 +35,10 @@ const getUnitIcon = (type, isMe = false) => {
       break;
     case 'soldier':
       iconHtml = `
-        <div class="unit-icon soldier" style="color: ${color}; font-size: 24px;">
-          <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+        <div class="unit-icon soldier" style="color: ${color};">
+          <svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4M12 12h.01" stroke-linecap="round"/>
           </svg>
           <div class="radiation-wave" style="border-color: ${color}"></div>
         </div>`;
@@ -796,9 +797,9 @@ const MapComponent = ({ session }) => {
                 {userLocation && (
                     <Polyline 
                         positions={[userLocation, displayPos]}
-                        pathOptions={{ color: '#00ff00', weight: 1, opacity: 0.4, dashArray: '5, 5' }}
+                        pathOptions={{ color: '#00ff00', weight: 2, opacity: 0.8 }}
                     >
-                        <Tooltip permanent direction="center" className="tactical-tooltip" opacity={0.7}>
+                        <Tooltip permanent direction="center" className="tactical-tooltip" opacity={0.9}>
                             {distanceToMe > 1000 ? (distanceToMe/1000).toFixed(1) + 'km' : distanceToMe + 'm'}
                         </Tooltip>
                     </Polyline>
