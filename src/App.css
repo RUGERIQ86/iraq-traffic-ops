@@ -510,46 +510,37 @@
     }
 }
 
-/* Fix for POI interactions and Clicking */
+/* Map Interaction V2 */
 .leaflet-container {
-    cursor: grab;
-    z-index: 1;
-}
-
-.leaflet-container.target-mode-active {
-    cursor: crosshair !important;
+    cursor: crosshair !important; /* Permanent tactical cursor */
+    z-index: 1 !important;
 }
 
 .leaflet-pane {
-    z-index: 400;
+    z-index: 400 !important;
 }
 
 .leaflet-tile-pane {
-    z-index: 200;
+    z-index: 200 !important;
     pointer-events: auto !important;
 }
 
-/* Ensure Google layer is at the bottom but interactive */
 .leaflet-google-layer {
     pointer-events: auto !important;
     z-index: 100 !important;
 }
 
-.leaflet-map-pane canvas {
-    z-index: 100;
-}
-
 .leaflet-marker-pane {
-    z-index: 600;
-    pointer-events: none;
+    z-index: 600 !important;
+    pointer-events: none !important; /* Let clicks through markers... */
 }
 
 .leaflet-marker-icon {
-    pointer-events: auto !important;
+    pointer-events: auto !important; /* ...but keep icon clickable */
 }
 
 .leaflet-popup-pane {
-    z-index: 700;
+    z-index: 700 !important;
 }
 
 /* Squad Marker Styles */
@@ -670,29 +661,37 @@ body {
   cursor: crosshair !important;
 }
 
-/* HUD Overlay */
+/* HUD Layout */
 .hud-overlay {
-  position: absolute;
+  position: fixed; /* Use fixed for better HUD stability */
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  pointer-events: none;
-  z-index: 2000; /* Increased to be above effects and map */
+  pointer-events: none !important; /* GLOBAL DISABLE: No clicks on the HUD container */
+  z-index: 10000; /* High but transparent */
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  padding: 20px;
+  box-sizing: border-box;
 }
 
+/* RE-ENABLE ONLY FOR INTERACTIVE HUD ELEMENTS */
 .top-hud-container, 
 .bottom-toolbar, 
 .status-bar,
 .search-container-hud,
 .squad-list-container,
 .logout-btn,
-.chat-container {
-  pointer-events: auto; /* Re-enable clicks for UI elements */
+.chat-container,
+.toolbar-btn,
+.search-input-hud,
+.search-results-dropdown,
+.hacker-popup,
+.leaflet-popup,
+.leaflet-marker-icon {
+  pointer-events: auto !important; 
 }
 
 .top-hud-container {
