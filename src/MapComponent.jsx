@@ -455,9 +455,15 @@ const MapComponent = ({ session }) => {
 
   // Admin function to change unit type (only for ruger)
   const changeUnitType = async (targetUnitId, newType) => {
-    const isAdmin = myUnitId.toUpperCase().includes('RUGER') || 
-                    session?.user?.email?.toLowerCase().includes('ruger');
+    // Debugging Admin Access
+    console.log("DEBUG - MyUnitId:", myUnitId);
+    console.log("DEBUG - User Email:", session?.user?.email);
     
+    const isAdmin = myUnitId.toUpperCase().includes('RUGER') || 
+                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger'));
+    
+    console.log("DEBUG - IsAdmin:", isAdmin);
+
     if (!isAdmin) {
       setStatusMsg('ERR: UNAUTHORIZED ACCESS');
       return;
@@ -981,7 +987,9 @@ const MapComponent = ({ session }) => {
                                   </div>
                                   
                                   {/* Admin Controls for Ruger */}
-                                  {(myUnitId.toUpperCase().includes('RUGER') || session?.user?.email?.toLowerCase().includes('ruger')) && (
+                                  {(myUnitId.toUpperCase().includes('RUGER') || 
+                                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger')) ||
+                                    true) && ( // TEMPORARY FORCE TRUE FOR DEBUGGING
                                       <div style={{ 
                                           display: 'flex', 
                                           gap: '8px', 
@@ -989,7 +997,8 @@ const MapComponent = ({ session }) => {
                                           padding: '5px',
                                           background: 'rgba(0, 255, 0, 0.1)',
                                           borderRadius: '4px',
-                                          border: '1px solid #00ff0044'
+                                          border: '1px solid #00ff0044',
+                                          pointerEvents: 'auto' // Ensure clickability
                                       }}>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'infantry'); }}
