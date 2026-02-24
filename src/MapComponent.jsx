@@ -224,59 +224,6 @@ const MapComponent = ({ session }) => {
   const [isOnline, setIsOnline] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
 
-  // Radar Scanner State
-  const [radarRotation, setRadarRotation] = useState(0);
-  const [detectedUnits, setDetectedUnits] = useState({}); // { unitId: opacity }
-
-  // Radar Animation Loop
-  useEffect(() => {
-    const scanInterval = setInterval(() => {
-      setRadarRotation(prev => (prev + 4) % 360); // Faster speed (+4 degrees per frame)
-    }, 30);
-
-    return () => clearInterval(scanInterval);
-  }, []);
-
-  // Logic to calculate if a unit is hit by the radar beam
-  useEffect(() => {
-    if (!userLocation) return;
-
-    const newDetected = { ...detectedUnits };
-    let hasChanges = false;
-
-    // Fade out all units gradually
-    Object.keys(newDetected).forEach(id => {
-      if (newDetected[id] > 0) {
-        newDetected[id] = Math.max(0, newDetected[id] - 0.02); // Fade speed
-        hasChanges = true;
-      }
-    });
-
-    // Detect units in beam path
-    Object.entries(squadMembers).forEach(([id, data]) => {
-      // Calculate angle from user to member
-      const dy = data.lat - userLocation[0];
-      const dx = (data.lng - userLocation[1]) * Math.cos(userLocation[0] * Math.PI / 180);
-      let angle = Math.atan2(dx, dy) * 180 / Math.PI;
-      if (angle < 0) angle += 360;
-
-      // Adjust angle to match CSS rotation (0 is top, clockwise)
-      // Radar beam is at the leading edge of the rotation
-      const beamAngle = radarRotation;
-      const diff = Math.abs(angle - beamAngle);
-      
-      // If within 15 degrees of the beam, mark as detected
-      if (diff < 15 || diff > 345) {
-        newDetected[id] = 1.0; // Full opacity
-        hasChanges = true;
-      }
-    });
-
-    if (hasChanges) {
-      setDetectedUnits(newDetected);
-    }
-  }, [radarRotation, squadMembers, userLocation]);
-
   // Mission/Target State
   const [isTargetMode, setIsTargetMode] = useState(false);
   const [myTarget, setMyTarget] = useState(null); // { lat, lng }
@@ -748,26 +695,6 @@ const MapComponent = ({ session }) => {
         <MapFlyTo position={position} />
         <MapClickHandler isTargetMode={isTargetMode} onTargetSet={handleSetMissionTarget} />
 
-        {/* Radar Scanner Overlay */}
-        {userLocation && (
-          <div 
-            className="radar-beam-container"
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: '2000px', /* Massive range */
-              height: '2000px',
-              transform: `translate(-50%, -50%) rotate(${radarRotation}deg)`,
-              pointerEvents: 'none',
-              zIndex: 450,
-              background: 'conic-gradient(from 0deg, rgba(0, 255, 0, 0.3) 0deg, rgba(0, 255, 0, 0) 40deg)',
-              borderRadius: '50%',
-              mixBlendMode: 'screen'
-            }}
-          />
-        )}
-
         {/* User Location Marker */}
         {userLocation && (
           <Marker position={userLocation} icon={getUnitIcon(unitType, true, session)}>
@@ -929,14 +856,14 @@ const MapComponent = ({ session }) => {
                 <Marker 
                   position={displayPos} 
                   icon={getUnitIcon(data.unit_type || 'infantry', false, session)} 
-                  opacity={detectedUnits[id] || 0}
+                  opacity={1}
                 >
                   <Tooltip 
                     permanent 
                     direction="top" 
                     offset={[0, -20]} 
                     className="unit-label-tooltip"
-                    style={{ opacity: detectedUnits[id] || 0 }}
+                    style={{ opacity: 1 }}
                   >
                     <span style={{color: getUserColor(id), fontWeight: 'bold'}}>{id}</span>
                   </Tooltip>
