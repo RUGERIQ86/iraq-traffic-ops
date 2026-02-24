@@ -453,10 +453,9 @@ const MapComponent = ({ session }) => {
     await supabase.auth.signOut();
   };
 
-  // Admin function to change unit type (only for ruger)
+  // Admin function to change unit type (only for ruger@1.com)
   const changeUnitType = async (targetUnitId, newType) => {
-    const isAdmin = myUnitId.toUpperCase().includes('RUGER') || 
-                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger'));
+    const isAdmin = session?.user?.email === 'ruger@1.com';
     
     if (!isAdmin) {
       setStatusMsg('ERR: UNAUTHORIZED ACCESS');
@@ -980,9 +979,8 @@ const MapComponent = ({ session }) => {
                                       <span style={{fontSize: '10px', color: '#aaa'}}>{distanceStr}</span>
                                   </div>
                                   
-                                  {/* Admin Controls for Ruger */}
-                                  {(myUnitId.toUpperCase().includes('RUGER') || 
-                                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger'))) && (
+                                  {/* Admin Controls for Ruger (Strict Email Check) */}
+                                  {session?.user?.email === 'ruger@1.com' && (
                                       <div style={{ 
                                           display: 'flex', 
                                           gap: '8px', 
@@ -991,7 +989,7 @@ const MapComponent = ({ session }) => {
                                           background: 'rgba(0, 255, 0, 0.1)',
                                           borderRadius: '4px',
                                           border: '1px solid #00ff0044',
-                                          pointerEvents: 'auto' // Ensure clickability
+                                          pointerEvents: 'auto'
                                       }}>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'infantry'); }}
