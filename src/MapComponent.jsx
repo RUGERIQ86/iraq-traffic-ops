@@ -84,21 +84,27 @@ const TrafficLayer = () => {
   const trafficLayerRef = useRef(null);
 
   useEffect(() => {
-    // Waze Traffic Layer (More accurate real-time data)
-    const wazeTrafficUrl = 'https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png';
-    
-    trafficLayerRef.current = L.tileLayer(wazeTrafficUrl, {
-      maxZoom: 19,
-      attribution: 'Traffic Data by Waze'
+    // 1. Primary Map Layer (Google Maps Base)
+    const googleBaseUrl = 'https://mt{s}.google.com/vt/lyrs=m&hl=ar&x={x}&y={y}&z={z}';
+    L.tileLayer(googleBaseUrl, {
+      maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
+      attribution: 'Map data © Google'
     }).addTo(map);
 
-    // Auto-refresh every 30 seconds for Waze data
+    // 2. Waze Traffic Overlay (Transparent layer for traffic only)
+    const wazeTrafficUrl = 'https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png';
+    trafficLayerRef.current = L.tileLayer(wazeTrafficUrl, {
+      maxZoom: 19,
+      opacity: 0.7, // Adjust transparency of traffic lines
+      attribution: 'Traffic by Waze'
+    }).addTo(map);
+
+    // Auto-refresh Waze Traffic every 30 seconds
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        // Force refresh by adding unique parameter
         const newUrl = `https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png?t=${timestamp}`;
-        console.log("Refreshing Waze Traffic (30s)...", timestamp);
         trafficLayerRef.current.setUrl(newUrl);
       }
     }, 30000);
