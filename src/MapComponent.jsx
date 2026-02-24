@@ -927,22 +927,68 @@ const MapComponent = ({ session }) => {
       </div>
 
       {/* FIXED SEARCH BAR FOR WEB - TOP LEVEL */}
-      <div className="search-container-hud">
+      <div 
+          className="search-container-hud"
+          style={{
+              position: 'fixed',
+              top: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 99999,
+              width: '40%',
+              minWidth: '300px',
+              pointerEvents: 'auto'
+          }}
+      >
           <input 
               type="text" 
               placeholder="[ SEARCH SECTOR... ]" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="search-input-hud"
+              style={{
+                  width: '100%',
+                  padding: '12px',
+                  background: '#000000',
+                  border: '2px solid #00ffff',
+                  color: '#00ffff',
+                  fontFamily: 'Courier New',
+                  fontSize: '14px',
+                  textAlign: 'center',
+                  outline: 'none',
+                  boxShadow: '0 0 20px rgba(0, 255, 255, 0.6)',
+                  textTransform: 'uppercase',
+                  borderRadius: '4px'
+              }}
           />
           {/* Search Results Dropdown */}
           {searchResults.length > 0 && (
-              <div className="search-results-dropdown">
+              <div 
+                  className="search-results-dropdown"
+                  style={{
+                      background: 'rgba(0, 0, 0, 0.98)',
+                      border: '1px solid #00ffff',
+                      marginTop: '5px',
+                      maxHeight: '300px',
+                      overflowY: 'auto',
+                      boxShadow: '0 0 30px rgba(0, 0, 0, 0.9)'
+                  }}
+              >
                   {searchResults.map((result, idx) => (
                       <div 
                           key={idx}
                           onClick={() => selectSearchResult(result)}
                           className="search-result-item"
+                          style={{
+                              padding: '12px',
+                              color: '#fff',
+                              borderBottom: '1px solid #003333',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontFamily: 'Courier New',
+                              textAlign: 'right',
+                              direction: 'rtl'
+                          }}
                       >
                           {result.display_name}
                       </div>
