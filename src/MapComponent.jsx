@@ -177,12 +177,27 @@ const MapFlyTo = ({ position }) => {
   return null;
 };
 
-// Component to handle map clicks for targeting
+// Component to handle map clicks for setting targets
 const MapClickHandler = ({ isTargetMode, onTargetSet }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (isTargetMode) {
+      map.getContainer().style.cursor = 'crosshair';
+      // Force map to be interactive
+      map.dragging.enable();
+    } else {
+      map.getContainer().style.cursor = '';
+    }
+  }, [isTargetMode, map]);
+
   useMapEvents({
     click(e) {
       if (isTargetMode) {
+        console.log("MAP CLICK DETECTED:", e.latlng);
         onTargetSet(e.latlng);
+        // Instant visual feedback: fly to target
+        map.setView(e.latlng, map.getZoom(), { animate: true });
       }
     },
   });

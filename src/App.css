@@ -454,6 +454,7 @@
 .custom-unit-marker-v2 {
     background: transparent !important;
     border: none !important;
+    pointer-events: auto !important; /* Ensure icons are clickable */
 }
 
 .unit-icon-container {
@@ -463,12 +464,14 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    pointer-events: none; /* Let clicks through waves... */
 }
 
 .unit-symbol {
     position: relative;
     z-index: 10;
     filter: drop-shadow(0 0 5px currentColor);
+    pointer-events: auto; /* ...but keep symbol clickable */
 }
 
 .radiation-wave-integrated {
@@ -507,23 +510,35 @@
     }
 }
 
-/* Fix for POI interactions */
+/* Fix for POI interactions and Clicking */
+.leaflet-container {
+    cursor: grab;
+}
+
+.leaflet-container.target-mode-active {
+    cursor: crosshair !important;
+}
+
 .leaflet-pane {
     z-index: 400;
 }
 
 .leaflet-tile-pane {
     z-index: 200;
-    pointer-events: auto !important; /* Allow clicking on tiles/POI */
+    pointer-events: auto !important;
+}
+
+.leaflet-map-pane canvas {
+    z-index: 100;
 }
 
 .leaflet-marker-pane {
     z-index: 600;
-    pointer-events: none; /* Let clicks pass through marker container... */
+    pointer-events: none;
 }
 
 .leaflet-marker-icon {
-    pointer-events: auto !important; /* ...but enable them for actual icons */
+    pointer-events: auto !important;
 }
 
 .leaflet-popup-pane {
@@ -532,6 +547,7 @@
 
 .leaflet-google-layer {
     pointer-events: auto !important;
+    z-index: 150;
 }
 
 /* Squad Marker Styles */
