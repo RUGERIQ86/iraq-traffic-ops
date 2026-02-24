@@ -818,6 +818,77 @@ const MapComponent = ({ session }) => {
                   <div>ID: <span style={{color: '#00ff00'}}>{myUnitId}</span></div>
               </div>
 
+              {/* SEARCH BAR (CENTERED IN TOP CONTAINER) */}
+              <div 
+                  className="search-container-hud"
+                  style={{
+                      position: 'absolute',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      top: '10px',
+                      width: '40%',
+                      minWidth: '280px',
+                      pointerEvents: 'auto',
+                      zIndex: 9999
+                  }}
+              >
+                  <input 
+                      type="text" 
+                      placeholder="[ SEARCH SECTOR... ]" 
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="search-input-hud"
+                      style={{
+                          width: '100%',
+                          padding: '12px',
+                          background: 'rgba(0, 0, 0, 0.9)',
+                          border: '2px solid #00ffff',
+                          color: '#00ffff',
+                          fontFamily: 'Courier New',
+                          fontSize: '14px',
+                          textAlign: 'center',
+                          outline: 'none',
+                          boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
+                          textTransform: 'uppercase',
+                          borderRadius: '4px'
+                      }}
+                  />
+                  {/* Search Results Dropdown */}
+                  {searchResults.length > 0 && (
+                      <div 
+                          className="search-results-dropdown"
+                          style={{
+                              background: 'rgba(0, 0, 0, 0.98)',
+                              border: '1px solid #00ffff',
+                              marginTop: '5px',
+                              maxHeight: '250px',
+                              overflowY: 'auto',
+                              boxShadow: '0 0 30px rgba(0, 0, 0, 0.9)'
+                          }}
+                      >
+                          {searchResults.map((result, idx) => (
+                              <div 
+                                  key={idx}
+                                  onClick={() => selectSearchResult(result)}
+                                  className="search-result-item"
+                                  style={{
+                                      padding: '10px',
+                                      color: '#fff',
+                                      borderBottom: '1px solid #003333',
+                                      cursor: 'pointer',
+                                      fontSize: '12px',
+                                      fontFamily: 'Courier New',
+                                      textAlign: 'right',
+                                      direction: 'rtl'
+                                  }}
+                              >
+                                  {result.display_name}
+                              </div>
+                          ))}
+                      </div>
+                  )}
+              </div>
+
               <div className="top-right" style={{minWidth: '150px'}}>
               <div style={{marginBottom: '5px', borderBottom: '1px solid #00ff00', fontSize: '12px', fontWeight: 'bold'}}>ACTIVE SQUAD UNITS</div>
               <div style={{maxHeight: '150px', overflowY: 'auto'}}>
@@ -873,6 +944,7 @@ const MapComponent = ({ session }) => {
               </div>
               <button onClick={handleLogout} className="logout-btn" style={{marginTop: '10px', width: '100%', fontSize: '10px'}}>[ EXIT SYSTEM ]</button>
           </div>
+          </div>
           
           {/* Bottom Toolbar (Mobile Friendly) */}
           <div className="bottom-toolbar">
@@ -924,77 +996,6 @@ const MapComponent = ({ session }) => {
 
           {/* Chat Component */}
           {myUnitId && <ChatComponent myUnitId={myUnitId} session={session} />}
-      </div>
-
-      {/* FIXED SEARCH BAR FOR WEB - TOP LEVEL */}
-      <div 
-          className="search-container-hud"
-          style={{
-              position: 'fixed',
-              top: '20px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 99999,
-              width: '40%',
-              minWidth: '300px',
-              pointerEvents: 'auto'
-          }}
-      >
-          <input 
-              type="text" 
-              placeholder="[ SEARCH SECTOR... ]" 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input-hud"
-              style={{
-                  width: '100%',
-                  padding: '12px',
-                  background: '#000000',
-                  border: '2px solid #00ffff',
-                  color: '#00ffff',
-                  fontFamily: 'Courier New',
-                  fontSize: '14px',
-                  textAlign: 'center',
-                  outline: 'none',
-                  boxShadow: '0 0 20px rgba(0, 255, 255, 0.6)',
-                  textTransform: 'uppercase',
-                  borderRadius: '4px'
-              }}
-          />
-          {/* Search Results Dropdown */}
-          {searchResults.length > 0 && (
-              <div 
-                  className="search-results-dropdown"
-                  style={{
-                      background: 'rgba(0, 0, 0, 0.98)',
-                      border: '1px solid #00ffff',
-                      marginTop: '5px',
-                      maxHeight: '300px',
-                      overflowY: 'auto',
-                      boxShadow: '0 0 30px rgba(0, 0, 0, 0.9)'
-                  }}
-              >
-                  {searchResults.map((result, idx) => (
-                      <div 
-                          key={idx}
-                          onClick={() => selectSearchResult(result)}
-                          className="search-result-item"
-                          style={{
-                              padding: '12px',
-                              color: '#fff',
-                              borderBottom: '1px solid #003333',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                              fontFamily: 'Courier New',
-                              textAlign: 'right',
-                              direction: 'rtl'
-                          }}
-                      >
-                          {result.display_name}
-                      </div>
-                  ))}
-              </div>
-          )}
       </div>
     </div>
   );
