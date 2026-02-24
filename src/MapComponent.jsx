@@ -455,7 +455,9 @@ const MapComponent = ({ session }) => {
 
   // Admin function to change unit type (only for ruger)
   const changeUnitType = async (targetUnitId, newType) => {
-    if (myUnitId.toLowerCase() !== 'ruger') {
+    const isAdmin = myUnitId.toLowerCase() === 'ruger' || session?.user?.email === 'ruger@1.com';
+    
+    if (!isAdmin) {
       setStatusMsg('ERR: UNAUTHORIZED ACCESS');
       return;
     }
@@ -978,7 +980,7 @@ const MapComponent = ({ session }) => {
                                   </div>
                                   
                                   {/* Admin Controls for Ruger */}
-                                  {myUnitId.toLowerCase() === 'ruger' && (
+                                  {(myUnitId.toLowerCase() === 'ruger' || session?.user?.email === 'ruger@1.com') && (
                                       <div style={{ display: 'flex', gap: '5px', marginTop: '2px', paddingLeft: '10px' }}>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'infantry'); }}
