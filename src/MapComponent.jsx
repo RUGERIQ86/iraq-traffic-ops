@@ -92,19 +92,22 @@ const TrafficLayer = () => {
       attribution: 'Map data © Google'
     }).addTo(map);
 
-    // 2. Waze Traffic Overlay (Transparent layer for traffic only)
+    // 2. Waze Traffic Overlay (Transparent layer for traffic ONLY)
+    // We use the NA/World tile server specifically for real-time traffic updates
     const wazeTrafficUrl = 'https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png';
     trafficLayerRef.current = L.tileLayer(wazeTrafficUrl, {
       maxZoom: 19,
-      opacity: 0.7, // Adjust transparency of traffic lines
-      attribution: 'Traffic by Waze'
+      opacity: 1, // Full opacity for the traffic lines
+      attribution: 'Traffic by Waze',
+      className: 'waze-traffic-layer' // Custom class for potential CSS filters
     }).addTo(map);
 
-    // Auto-refresh Waze Traffic every 30 seconds
+    // Auto-refresh Waze Traffic every 30 seconds with robust cache busting
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        const newUrl = `https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png?t=${timestamp}`;
+        // Adding multiple parameters to ensure Waze server returns fresh data
+        const newUrl = `https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png?t=${timestamp}&v=4`;
         trafficLayerRef.current.setUrl(newUrl);
       }
     }, 30000);
