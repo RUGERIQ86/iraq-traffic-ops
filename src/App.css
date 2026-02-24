@@ -643,19 +643,18 @@ body {
   padding: 10px;
   gap: 10px;
   pointer-events: none;
+  position: relative; /* Added to ensure absolute children position correctly */
 }
 
 .top-left, .top-right {
-  position: relative; /* Changed from absolute */
-  top: 0;
-  left: 0;
-  right: 0;
+  position: relative;
   padding: 10px;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8); /* Darker background */
   border: 1px solid var(--hud-color);
   font-size: clamp(9px, 2vmin, 12px);
   text-shadow: 0 0 5px var(--hud-color);
   pointer-events: auto;
+  min-width: 120px; /* Ensure a minimum width */
   max-width: 30%;
   backdrop-filter: blur(5px);
 }
@@ -671,21 +670,28 @@ body {
   left: 50%;
   transform: translateX(-50%);
   width: 35%;
-  z-index: 3000;
+  min-width: 250px; /* Added minimum width for web visibility */
+  z-index: 5000; /* Increased to be above everything */
   pointer-events: auto;
 }
 
 .search-input-hud {
   width: 100%;
-  padding: 8px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 1px solid #00ffff;
+  padding: 10px; /* Slightly more padding */
+  background: rgba(0, 0, 0, 0.9); /* Darker background */
+  border: 2px solid #00ffff; /* Thicker border */
   color: #00ffff;
   font-family: 'Courier New', monospace;
-  font-size: 10px;
+  font-size: 12px; /* Slightly larger font */
   text-align: center;
   outline: none;
-  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
+  box-shadow: 0 0 15px rgba(0, 255, 255, 0.4); /* Stronger glow */
+  text-transform: uppercase;
+}
+
+.search-input-hud:focus {
+  border-color: #ffffff;
+  box-shadow: 0 0 20px rgba(0, 255, 255, 0.6);
 }
 
 /* Crosshair */
