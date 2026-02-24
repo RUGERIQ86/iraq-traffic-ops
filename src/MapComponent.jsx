@@ -455,15 +455,9 @@ const MapComponent = ({ session }) => {
 
   // Admin function to change unit type (only for ruger)
   const changeUnitType = async (targetUnitId, newType) => {
-    // Debugging Admin Access
-    console.log("DEBUG - MyUnitId:", myUnitId);
-    console.log("DEBUG - User Email:", session?.user?.email);
-    
     const isAdmin = myUnitId.toUpperCase().includes('RUGER') || 
                     (session?.user?.email && session.user.email.toLowerCase().includes('ruger'));
     
-    console.log("DEBUG - IsAdmin:", isAdmin);
-
     if (!isAdmin) {
       setStatusMsg('ERR: UNAUTHORIZED ACCESS');
       return;
@@ -988,8 +982,7 @@ const MapComponent = ({ session }) => {
                                   
                                   {/* Admin Controls for Ruger */}
                                   {(myUnitId.toUpperCase().includes('RUGER') || 
-                                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger')) ||
-                                    true) && ( // TEMPORARY FORCE TRUE FOR DEBUGGING
+                                    (session?.user?.email && session.user.email.toLowerCase().includes('ruger'))) && (
                                       <div style={{ 
                                           display: 'flex', 
                                           gap: '8px', 
