@@ -217,11 +217,17 @@ const MapComponent = ({ session }) => {
   const [autoFollow, setAutoFollow] = useState(true); // New state for auto-following
   const [trackingUnitId, setTrackingUnitId] = useState(null); // ID of the unit currently being followed
   const [currentZoom, setCurrentZoom] = useState(13); // Track zoom level for displacement logic
+  const mapRef = useRef(null); // Add map reference for direct manipulation
   const watchIdRef = useRef(null);
   const hasCenteredMap = useRef(false);
 
   // Component to handle map clicks and drags to disable auto-follow
   const MapEvents = () => {
+    const map = useMap();
+    useEffect(() => {
+      mapRef.current = map;
+    }, [map]);
+
     useMapEvents({
       dragstart() {
         setAutoFollow(false);
@@ -353,18 +359,29 @@ const MapComponent = ({ session }) => {
     return () => clearInterval(interval);
   }, [userLocation, myUnitId, myTarget, myRoutePath]);
 
+  // Auto-follow logic for tracked unit
+  useEffect(() => {
+    if (autoFollow && mapRef.current) {
+        let targetPos = null;
+        if (trackingUnitId === myUnitId && userLocation) {
+            targetPos = userLocation;
+        } else if (trackingUnitId && squadMembers[trackingUnitId]) {
+            const member = squadMembers[trackingUnitId];
+            targetPos = [member.lat, member.lng];
+        }
+
+        if (targetPos) {
+            // Use setView for instant centering instead of slow flyTo
+            mapRef.current.setView(targetPos, mapRef.current.getZoom(), {
+                animate: false
+            });
+        }
+    }
+  }, [userLocation, squadMembers, autoFollow, trackingUnitId, myUnitId]);
+
   // Subscribe to Squad Updates
   useEffect(() => {
     if (!supabase) return;
-
-    // Auto-follow logic for tracked unit
-    if (autoFollow && trackingUnitId && trackingUnitId !== myUnitId) {
-        const member = squadMembers[trackingUnitId];
-        if (member) {
-            setPosition([member.lat, member.lng]);
-            setStatusMsg(`TRACKING UNIT: ${trackingUnitId}`);
-        }
-    }
 
     // Fetch initial locations of all users
     const fetchInitialLocations = async () => {
@@ -1075,7 +1092,14 @@ const MapComponent = ({ session }) => {
 
               <button 
                   className="toolbar-btn"
-                  onClick={handleLocateMe}
+                  onClick={() => {
+                      if (userLocation && mapRef.current) {
+                          setTrackingUnitId(myUnitId);
+                          setAutoFollow(true);
+                          mapRef.current.setView(userLocation, 16, { animate: true });
+                          setStatusMsg('LOCATING OPERATOR...');
+                      }
+                  }}
               >
                   LOCATE ME
               </button>
