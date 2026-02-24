@@ -804,6 +804,55 @@ const MapComponent = ({ session }) => {
 
       {/* HUD Interface */}
       <div className="hud-overlay">
+          {/* Search Bar (Moved outside top-hud-container for better visibility) */}
+          <div className="search-container-hud">
+              <input 
+                  type="text" 
+                  placeholder="[ SEARCH SECTOR... ]" 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="search-input-hud"
+              />
+              {/* Search Results Dropdown */}
+              {searchResults.length > 0 && (
+                  <div style={{
+                      background: 'rgba(0, 0, 0, 0.95)',
+                      border: '1px solid #00ffff',
+                      marginTop: '5px',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      boxShadow: '0 0 20px rgba(0, 0, 0, 0.8)'
+                  }}>
+                      {searchResults.map((result, idx) => (
+                          <div 
+                              key={idx}
+                              onClick={() => selectSearchResult(result)}
+                              style={{
+                                  padding: '8px',
+                                  color: '#fff',
+                                  borderBottom: '1px solid #003333',
+                                  cursor: 'pointer',
+                                  fontSize: '10px',
+                                  fontFamily: 'Courier New',
+                                  textAlign: 'left',
+                                  direction: 'rtl'
+                              }}
+                              onMouseEnter={(e) => {
+                                  e.target.style.background = '#00ffff';
+                                  e.target.style.color = '#000';
+                              }}
+                              onMouseLeave={(e) => {
+                                  e.target.style.background = 'transparent';
+                                  e.target.style.color = '#fff';
+                              }}
+                          >
+                              {result.display_name}
+                          </div>
+                      ))}
+                  </div>
+              )}
+          </div>
+
           <div className="top-hud-container">
               <div className="top-left" 
                    onClick={() => {
@@ -816,55 +865,6 @@ const MapComponent = ({ session }) => {
               >
                   <div>SYS.OP: {isOnline ? 'ONLINE' : 'OFFLINE'}</div>
                   <div>ID: <span style={{color: '#00ff00'}}>{myUnitId}</span></div>
-              </div>
-
-              {/* Search Bar */}
-              <div className="search-container-hud">
-                  <input 
-                      type="text" 
-                      placeholder="[ SEARCH SECTOR... ]" 
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="search-input-hud"
-                  />
-                  {/* Search Results Dropdown */}
-                  {searchResults.length > 0 && (
-                      <div style={{
-                          background: 'rgba(0, 0, 0, 0.95)',
-                          border: '1px solid #00ffff',
-                          marginTop: '5px',
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          boxShadow: '0 0 20px rgba(0, 0, 0, 0.8)'
-                      }}>
-                          {searchResults.map((result, idx) => (
-                              <div 
-                                  key={idx}
-                                  onClick={() => selectSearchResult(result)}
-                                  style={{
-                                      padding: '8px',
-                                      color: '#fff',
-                                      borderBottom: '1px solid #003333',
-                                      cursor: 'pointer',
-                                      fontSize: '10px',
-                                      fontFamily: 'Courier New',
-                                      textAlign: 'left',
-                                      direction: 'rtl'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                      e.target.style.background = '#00ffff';
-                                      e.target.style.color = '#000';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                      e.target.style.background = 'transparent';
-                                      e.target.style.color = '#fff';
-                                  }}
-                              >
-                                  {result.display_name}
-                              </div>
-                          ))}
-                      </div>
-                  )}
               </div>
 
               <div className="top-right" style={{minWidth: '150px'}}>
