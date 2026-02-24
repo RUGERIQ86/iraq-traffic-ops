@@ -84,26 +84,24 @@ const TrafficLayer = () => {
   const trafficLayerRef = useRef(null);
 
   useEffect(() => {
-    // Initial Traffic Layer
-    const googleTrafficUrl = 'https://mt{s}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}';
+    // Waze Traffic Layer (More accurate real-time data)
+    const wazeTrafficUrl = 'https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png';
     
-    trafficLayerRef.current = L.tileLayer(googleTrafficUrl, {
-      maxZoom: 20,
-      subdomains: ['0', '1', '2', '3'],
-      attribution: 'Traffic Data by Google'
+    trafficLayerRef.current = L.tileLayer(wazeTrafficUrl, {
+      maxZoom: 19,
+      attribution: 'Traffic Data by Waze'
     }).addTo(map);
 
-    // Auto-refresh every 30 seconds (faster for real-time traffic)
+    // Auto-refresh every 30 seconds for Waze data
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        // Use a random subdomain and a unique timestamp to force a fresh fetch from Google
-        const sub = Math.floor(Math.random() * 4);
-        const newUrl = `https://mt${sub}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}&v=123`;
-        console.log("Refreshing Traffic Layer (30s)...", timestamp);
+        // Force refresh by adding unique parameter
+        const newUrl = `https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png?t=${timestamp}`;
+        console.log("Refreshing Waze Traffic (30s)...", timestamp);
         trafficLayerRef.current.setUrl(newUrl);
       }
-    }, 30000); // Changed from 180000 to 30000 (30 seconds)
+    }, 30000);
 
     return () => {
       clearInterval(intervalId);
