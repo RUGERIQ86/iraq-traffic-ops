@@ -155,6 +155,7 @@ const MapComponent = ({ session }) => {
   const [targetIdInput, setTargetIdInput] = useState('');
   const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate, route_path, target_lat, target_lng } }
   const [isOnline, setIsOnline] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(null);
 
   // Mission/Target State
   const [isTargetMode, setIsTargetMode] = useState(false);
@@ -287,7 +288,10 @@ const MapComponent = ({ session }) => {
           .upsert(payload);
         
         if (error) console.error('Sync Error:', error);
-        else setIsOnline(true);
+        else {
+            setIsOnline(true);
+            setLastSyncTime(new Date().toLocaleTimeString());
+        }
       } catch (err) {
         console.error('Sync Exception:', err);
         setIsOnline(false);
@@ -943,7 +947,12 @@ const MapComponent = ({ session }) => {
           </div>
 
           <div className="status-bar">
-              STATUS: {statusMsg}
+              <div>STATUS: {statusMsg}</div>
+              {lastSyncTime && (
+                  <div style={{fontSize: '9px', color: '#00ff00', opacity: 0.8}}>
+                      LAST SYNC: {lastSyncTime}
+                  </div>
+              )}
               <div style={{
                   fontSize: '10px', 
                   color: '#00ffff', 
