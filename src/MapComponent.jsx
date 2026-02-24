@@ -170,6 +170,22 @@ const MapComponent = ({ session }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const [isTracking, setIsTracking] = useState(false);
+  const [autoFollow, setAutoFollow] = useState(true); // New state for auto-following
+  const watchIdRef = useRef(null);
+  const hasCenteredMap = useRef(false);
+
+  // Component to handle map clicks and drags to disable auto-follow
+  const MapEvents = () => {
+    useMapEvents({
+      dragstart() {
+        setAutoFollow(false);
+        setStatusMsg('MANUAL SCAN MODE');
+      },
+    });
+    return null;
+  };
+
   // Use Email as Unit ID (or part of it)
   useEffect(() => {
     if (session?.user?.email) {
@@ -188,9 +204,65 @@ const MapComponent = ({ session }) => {
     return () => clearInterval(timer);
   }, []);
 
+  // Continuous Location Tracking (Web optimized)
+  const startTracking = () => {
+    if (watchIdRef.current) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+    }
+
+    setStatusMsg('INITIALIZING TRACKER...');
+    setIsTracking(true);
+
+    if (!navigator.geolocation) {
+        setStatusMsg('ERR: GEO_NOT_SUPPORTED');
+        setIsTracking(false);
+        return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+            const { latitude, longitude, speed } = pos.coords;
+            const newPos = [latitude, longitude];
+            
+            setUserLocation(newPos);
+            
+            // Auto-follow logic
+            if (autoFollow) {
+                setPosition(newPos);
+            }
+            
+            // If this is the first update, center map
+            if (!hasCenteredMap.current) {
+                setPosition(newPos); 
+                hasCenteredMap.current = true;
+                setIsOnline(true);
+                setStatusMsg('TARGET LOCKED');
+            } else {
+                setIsOnline(true);
+                if (autoFollow) {
+                    setStatusMsg(`TRACKING | SPD: ${speed ? Math.round(speed * 3.6) : 0} KM/H`);
+                }
+            }
+        },
+        (err) => {
+            console.error("Tracking Error:", err);
+            setStatusMsg('SIGNAL LOST - RETRYING...');
+            setIsOnline(false);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+    );
+
+    watchIdRef.current = watchId;
+  };
+
   // Auto-Locate on Mount
   useEffect(() => {
-    handleLocateMe();
+    startTracking();
+    return () => {
+        if (watchIdRef.current) {
+            navigator.geolocation.clearWatch(watchIdRef.current);
+        }
+    };
   }, []);
 
   // Real-time Location Sync Logic (Includes Route)
@@ -222,9 +294,9 @@ const MapComponent = ({ session }) => {
       }
     };
 
-    // Sync immediately then every 10 seconds
+    // Sync immediately then every 3 seconds (faster for driving)
     syncLocation();
-    const interval = setInterval(syncLocation, 10000);
+    const interval = setInterval(syncLocation, 3000);
     return () => clearInterval(interval);
   }, [userLocation, myUnitId, myTarget, myRoutePath]);
 
@@ -306,30 +378,17 @@ const MapComponent = ({ session }) => {
   };
 
   const handleLocateMe = () => {
-    setStatusMsg('ACQUIRING TARGET...');
-    if (!navigator.geolocation) {
-      setStatusMsg('ERR: GEO_NOT_SUPPORTED');
-      return;
+    setAutoFollow(true); // Re-enable auto-following
+    if (userLocation) {
+        setPosition(userLocation);
+        setStatusMsg('RE-CENTERING TARGET...');
+        setTimeout(() => {
+             setStatusMsg('TRACKING');
+        }, 1000);
+    } else {
+        setStatusMsg('SEARCHING FOR SIGNAL...');
+        startTracking();
     }
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const { latitude, longitude } = pos.coords;
-        const newPos = [latitude, longitude];
-        setUserLocation(newPos);
-        setPosition(newPos); // This triggers flyTo
-        setStatusMsg('TARGET LOCKED');
-      },
-      (err) => {
-        console.error("Geolocation Error:", err);
-        if (err.code === 1 && window.location.protocol !== 'https:') {
-             setStatusMsg('ERR: HTTPS_REQUIRED');
-        } else {
-             setStatusMsg('ERR: SIGNAL_LOST');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
   };
 
   const handleAddTarget = () => {
@@ -497,6 +556,7 @@ const MapComponent = ({ session }) => {
         scrollWheelZoom={true} 
         className={`leaflet-map ${isTargetMode ? 'crosshair-cursor' : ''}`}
       >
+        <MapEvents />
         <TrafficLayer />
         <MapFlyTo position={position} />
         <MapClickHandler isTargetMode={isTargetMode} onTargetSet={handleSetMissionTarget} />
@@ -578,7 +638,7 @@ const MapComponent = ({ session }) => {
             <Popup>
               <div className="hacker-popup">
                 <h3 style={{color: 'red', borderColor: 'red'}}>MY UNIT: {myUnitId}</h3>
-                <p>STATUS: ONLINE</p>
+                <p>STATUS: <span style={{color: isOnline ? '#00ff00' : 'red'}}>{isOnline ? 'ONLINE' : 'OFFLINE'}</span></p>
                 <p>LAT: {userLocation[0].toFixed(4)}</p>
                 <p>LNG: {userLocation[1].toFixed(4)}</p>
               </div>
