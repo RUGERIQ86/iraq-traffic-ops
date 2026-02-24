@@ -93,17 +93,17 @@ const TrafficLayer = () => {
       attribution: 'Traffic Data by Google'
     }).addTo(map);
 
-    // Auto-refresh every 3 minutes (180000ms)
+    // Auto-refresh every 30 seconds (faster for real-time traffic)
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        // Use a random subdomain for refresh to avoid caching issues
+        // Use a random subdomain and a unique timestamp to force a fresh fetch from Google
         const sub = Math.floor(Math.random() * 4);
-        const newUrl = `https://mt${sub}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}`;
-        console.log("Refreshing Traffic Layer...", timestamp);
+        const newUrl = `https://mt${sub}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}&v=123`;
+        console.log("Refreshing Traffic Layer (30s)...", timestamp);
         trafficLayerRef.current.setUrl(newUrl);
       }
-    }, 180000);
+    }, 30000); // Changed from 180000 to 30000 (30 seconds)
 
     return () => {
       clearInterval(intervalId);
