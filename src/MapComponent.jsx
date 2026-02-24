@@ -455,7 +455,8 @@ const MapComponent = ({ session }) => {
 
   // Admin function to change unit type (only for ruger)
   const changeUnitType = async (targetUnitId, newType) => {
-    const isAdmin = myUnitId.toLowerCase() === 'ruger' || session?.user?.email === 'ruger@1.com';
+    const isAdmin = myUnitId.toUpperCase().includes('RUGER') || 
+                    session?.user?.email?.toLowerCase().includes('ruger');
     
     if (!isAdmin) {
       setStatusMsg('ERR: UNAUTHORIZED ACCESS');
@@ -980,19 +981,27 @@ const MapComponent = ({ session }) => {
                                   </div>
                                   
                                   {/* Admin Controls for Ruger */}
-                                  {(myUnitId.toLowerCase() === 'ruger' || session?.user?.email === 'ruger@1.com') && (
-                                      <div style={{ display: 'flex', gap: '5px', marginTop: '2px', paddingLeft: '10px' }}>
+                                  {(myUnitId.toUpperCase().includes('RUGER') || session?.user?.email?.toLowerCase().includes('ruger')) && (
+                                      <div style={{ 
+                                          display: 'flex', 
+                                          gap: '8px', 
+                                          marginTop: '5px', 
+                                          padding: '5px',
+                                          background: 'rgba(0, 255, 0, 0.1)',
+                                          borderRadius: '4px',
+                                          border: '1px solid #00ff0044'
+                                      }}>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'infantry'); }}
-                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                              style={{ flex: 1, fontSize: '10px', background: '#000', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer', padding: '4px 0' }}
                                           >INF</button>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'driver'); }}
-                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                              style={{ flex: 1, fontSize: '10px', background: '#000', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer', padding: '4px 0' }}
                                           >DRV</button>
                                           <button 
                                               onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'soldier'); }}
-                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                              style={{ flex: 1, fontSize: '10px', background: '#000', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer', padding: '4px 0' }}
                                           >SLD</button>
                                       </div>
                                   )}
