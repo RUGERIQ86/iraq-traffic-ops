@@ -19,8 +19,9 @@ let DefaultIcon = L.icon({
 L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom Icons Generator based on Unit Type
-const getUnitIcon = (type, isMe = false) => {
-  const color = isMe ? '#ff0000' : '#00ff00';
+const getUnitIcon = (type, isMe = false, session = null) => {
+  // FORCE RED FOR RUGER@1.COM ON WEB
+  const color = (isMe || (session?.user?.email === 'ruger@1.com' && isMe)) ? '#ff0000' : '#00ff00';
   let iconContent = '';
 
   // Improved integrated radiation waves
@@ -677,7 +678,7 @@ const MapComponent = ({ session }) => {
 
         {/* User Location Marker */}
         {userLocation && (
-          <Marker position={userLocation} icon={getUnitIcon(unitType, true)}>
+          <Marker position={userLocation} icon={getUnitIcon(unitType, true, session)}>
             <Popup>
               <div className="hacker-popup">
                 <h3 style={{color: 'red', borderColor: 'red'}}>MY UNIT: {myUnitId}</h3>
@@ -833,7 +834,7 @@ const MapComponent = ({ session }) => {
                     </Polyline>
                 )}
 
-                <Marker position={displayPos} icon={getUnitIcon(data.unit_type || 'infantry', false)} opacity={1}>
+                <Marker position={displayPos} icon={getUnitIcon(data.unit_type || 'infantry', false, session)} opacity={1}>
                   <Tooltip permanent direction="top" offset={[0, -20]} className="unit-label-tooltip">
                     <span style={{color: getUserColor(id), fontWeight: 'bold'}}>{id}</span>
                   </Tooltip>
