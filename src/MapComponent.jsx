@@ -18,31 +18,47 @@ let DefaultIcon = L.icon({
 
 L.Marker.prototype.options.icon = DefaultIcon;
 
-// Custom Military Icon (Red Radiation) - User
-const militaryIcon = L.divIcon({
-  className: 'military-user-marker',
-  html: `
-    <div class="radiation-core"></div>
-    <div class="radiation-wave"></div>
-    <div class="radiation-wave"></div>
-    <div class="radiation-wave"></div>
-  `,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
-});
+// Custom Icons Generator based on Unit Type
+const getUnitIcon = (type, isMe = false) => {
+  const color = isMe ? '#ff0000' : '#00ff00';
+  let iconHtml = '';
 
-// Custom Squad Icon (Red Radiation - Same as User)
-const squadIcon = L.divIcon({
-  className: 'military-user-marker',
-  html: `
-    <div class="radiation-core"></div>
-    <div class="radiation-wave"></div>
-    <div class="radiation-wave"></div>
-    <div class="radiation-wave"></div>
-  `,
-  iconSize: [40, 40],
-  iconAnchor: [20, 20]
-});
+  switch (type) {
+    case 'driver':
+      iconHtml = `
+        <div class="unit-icon driver" style="color: ${color}; font-size: 24px;">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+            <path d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/>
+          </svg>
+          <div class="radiation-wave" style="border-color: ${color}"></div>
+        </div>`;
+      break;
+    case 'soldier':
+      iconHtml = `
+        <div class="unit-icon soldier" style="color: ${color}; font-size: 24px;">
+          <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
+          </svg>
+          <div class="radiation-wave" style="border-color: ${color}"></div>
+        </div>`;
+      break;
+    default: // infantry/default radiation
+      iconHtml = `
+        <div class="military-user-marker">
+          <div class="radiation-core" style="background: ${color}"></div>
+          <div class="radiation-wave" style="border-color: ${color}"></div>
+          <div class="radiation-wave" style="border-color: ${color}"></div>
+          <div class="radiation-wave" style="border-color: ${color}"></div>
+        </div>`;
+  }
+
+  return L.divIcon({
+    className: 'custom-unit-marker',
+    html: iconHtml,
+    iconSize: [40, 40],
+    iconAnchor: [20, 20]
+  });
+};
 
 // Target Icon (White Crosshair - Code Black to appear White)
 const targetIcon = L.divIcon({
@@ -149,11 +165,12 @@ const MapComponent = ({ session }) => {
   const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [randomCode, setRandomCode] = useState('INIT...');
   const [statusMsg, setStatusMsg] = useState('SYSTEM READY');
+  const [unitType, setUnitType] = useState('infantry'); // New state for unit type
   
   // Multi-user State
   const [myUnitId, setMyUnitId] = useState('');
   const [targetIdInput, setTargetIdInput] = useState('');
-  const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate, route_path, target_lat, target_lng } }
+  const [squadMembers, setSquadMembers] = useState({}); // { 'UNIT-123': { lat, lng, lastUpdate, unit_type, ... } }
   const [isOnline, setIsOnline] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(null);
 
@@ -279,6 +296,7 @@ const MapComponent = ({ session }) => {
             lat: userLocation[0], 
             lng: userLocation[1],
             last_updated: new Date().toISOString(),
+            unit_type: unitType, // Added unit_type to payload
             // Explicitly set to null if undefined to clear them in DB
             target_lat: myTarget ? myTarget.lat : null,
             target_lng: myTarget ? myTarget.lng : null,
@@ -335,8 +353,12 @@ const MapComponent = ({ session }) => {
                         lastUpdate: new Date(member.last_updated),
                         route_path: member.route_path,
                         target_lat: member.target_lat,
-                        target_lng: member.target_lng
+                        target_lng: member.target_lng,
+                        unit_type: member.unit_type // Added unit_type
                     };
+                } else if (member.unit_id === myUnitId) {
+                    // Sync my unit type from DB if available
+                    if (member.unit_type) setUnitType(member.unit_type);
                 }
             });
             setSquadMembers(prev => ({ ...prev, ...members }));
@@ -350,7 +372,7 @@ const MapComponent = ({ session }) => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'locations' }, (payload) => {
         // Handle INSERT and UPDATE
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            const { unit_id, lat, lng, route_path, target_lat, target_lng, last_updated } = payload.new;
+            const { unit_id, lat, lng, route_path, target_lat, target_lng, last_updated, unit_type } = payload.new;
             if (unit_id !== myUnitId) {
                 setSquadMembers(prev => ({
                     ...prev,
@@ -360,7 +382,8 @@ const MapComponent = ({ session }) => {
                         lastUpdate: new Date(last_updated),
                         route_path, 
                         target_lat,
-                        target_lng
+                        target_lng,
+                        unit_type // Added unit_type
                     }
                 }));
             }
@@ -428,6 +451,28 @@ const MapComponent = ({ session }) => {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+  };
+
+  // Admin function to change unit type (only for ruger)
+  const changeUnitType = async (targetUnitId, newType) => {
+    if (myUnitId.toLowerCase() !== 'ruger') {
+      setStatusMsg('ERR: UNAUTHORIZED ACCESS');
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('locations')
+        .update({ unit_type: newType })
+        .eq('unit_id', targetUnitId);
+
+      if (error) throw error;
+      
+      setStatusMsg(`UNIT ${targetUnitId} UPDATED TO ${newType.toUpperCase()}`);
+    } catch (err) {
+      console.error('Update Error:', err);
+      setStatusMsg('ERR: UPDATE FAILED');
+    }
   };
 
   // Handle setting a mission target
@@ -577,12 +622,13 @@ const MapComponent = ({ session }) => {
         <MapFlyTo position={position} />
         <MapClickHandler isTargetMode={isTargetMode} onTargetSet={handleSetMissionTarget} />
 
-        {/* User Location Marker (Red Radiation) */}
+        {/* User Location Marker */}
         {userLocation && (
-          <Marker position={userLocation} icon={militaryIcon}>
+          <Marker position={userLocation} icon={getUnitIcon(unitType, true)}>
             <Popup>
               <div className="hacker-popup">
                 <h3 style={{color: 'red', borderColor: 'red'}}>MY UNIT: {myUnitId}</h3>
+                <p>TYPE: {unitType.toUpperCase()}</p>
                 <p>STATUS: <span style={{color: isOnline ? '#00ff00' : 'red'}}>{isOnline ? 'ONLINE' : 'OFFLINE'}</span></p>
                 <p>LAT: {userLocation[0].toFixed(4)}</p>
                 <p>LNG: {userLocation[1].toFixed(4)}</p>
@@ -719,10 +765,11 @@ const MapComponent = ({ session }) => {
                     </Polyline>
                 )}
 
-                <Marker position={[data.lat, data.lng]} icon={squadIcon} opacity={1}>
+                <Marker position={[data.lat, data.lng]} icon={getUnitIcon(data.unit_type || 'infantry', false)} opacity={1}>
                   <Popup>
                     <div className="hacker-popup">
                       <h3>UNIT: {id}</h3>
+                      <p>TYPE: {(data.unit_type || 'infantry').toUpperCase()}</p>
                       <p>STATUS: ONLINE</p>
                       <p>LAST SEEN: {new Date(data.lastUpdate).toLocaleTimeString()}</p>
                       <p>DIST: {distance}m</p>
@@ -902,38 +949,51 @@ const MapComponent = ({ session }) => {
                           const userColor = getUserColor(id);
 
                           return (
-                              <div 
-                                      key={id} 
-                                      style={{
-                                          color: userColor, 
-                                          cursor: 'pointer', 
-                                          fontSize: '12px',
-                                          marginBottom: '5px',
-                                          padding: '4px',
-                                          display: 'flex',
-                                          justifyContent: 'space-between',
-                                          alignItems: 'center',
-                                          borderBottom: `1px solid ${userColor}33`, // 20% opacity
-                                          background: trackingUnitId === id ? `${userColor}22` : 'transparent',
-                                          borderRadius: '2px',
-                                          transition: 'background 0.2s'
-                                      }}
-                                      onClick={() => {
-                                          // Fly to member location
-                                          setTrackingUnitId(id);
-                                          setAutoFollow(true);
-                                          setPosition([m.lat, m.lng]); 
-                                          setStatusMsg(`TRACKING UNIT: ${id}`);
-                                      }}
-                                  onMouseEnter={(e) => {
-                                       e.currentTarget.style.background = `${userColor}22`; // Low opacity background
-                                  }}
-                                  onMouseLeave={(e) => {
-                                       e.currentTarget.style.background = 'transparent';
-                                  }}
-                              >
-                                  <span style={{fontWeight: 'bold', textShadow: `0 0 5px ${userColor}`}}>• {id}</span>
-                                  <span style={{fontSize: '10px', color: '#aaa'}}>{distanceStr}</span>
+                              <div key={id} className="squad-member-item" style={{ marginBottom: '8px' }}>
+                                  <div 
+                                          style={{
+                                              color: userColor, 
+                                              cursor: 'pointer', 
+                                              fontSize: '12px',
+                                              padding: '4px',
+                                              display: 'flex',
+                                              justifyContent: 'space-between',
+                                              alignItems: 'center',
+                                              borderBottom: `1px solid ${userColor}33`, 
+                                              background: trackingUnitId === id ? `${userColor}22` : 'transparent',
+                                              borderRadius: '2px',
+                                              transition: 'background 0.2s'
+                                          }}
+                                          onClick={() => {
+                                              setTrackingUnitId(id);
+                                              setAutoFollow(true);
+                                              setPosition([m.lat, m.lng]); 
+                                              setStatusMsg(`TRACKING UNIT: ${id}`);
+                                          }}
+                                  >
+                                      <span style={{fontWeight: 'bold', textShadow: `0 0 5px ${userColor}`}}>
+                                          • {id} [{(m.unit_type || 'INF').substring(0, 3).toUpperCase()}]
+                                      </span>
+                                      <span style={{fontSize: '10px', color: '#aaa'}}>{distanceStr}</span>
+                                  </div>
+                                  
+                                  {/* Admin Controls for Ruger */}
+                                  {myUnitId.toLowerCase() === 'ruger' && (
+                                      <div style={{ display: 'flex', gap: '5px', marginTop: '2px', paddingLeft: '10px' }}>
+                                          <button 
+                                              onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'infantry'); }}
+                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                          >INF</button>
+                                          <button 
+                                              onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'driver'); }}
+                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                          >DRV</button>
+                                          <button 
+                                              onClick={(e) => { e.stopPropagation(); changeUnitType(id, 'soldier'); }}
+                                              style={{ fontSize: '8px', background: 'transparent', border: '1px solid #00ff00', color: '#00ff00', cursor: 'pointer' }}
+                                          >SLD</button>
+                                      </div>
+                                  )}
                               </div>
                           );
                       })
