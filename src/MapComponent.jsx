@@ -61,7 +61,9 @@ const getUnitIcon = (type, isMe = false) => {
     className: 'custom-unit-marker',
     html: iconContent,
     iconSize: [40, 40],
-    iconAnchor: [20, 20]
+    iconAnchor: [20, 20], // Exact center
+    popupAnchor: [0, -20],
+    tooltipAnchor: [0, -20]
   });
 };
 
