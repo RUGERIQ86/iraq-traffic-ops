@@ -281,6 +281,19 @@
   .toolbar-btn {
     padding: 12px 5px;
   }
+
+  .status-bar {
+    bottom: calc(18vh + env(safe-area-inset-bottom));
+  }
+
+  .chat-toggle-btn {
+    bottom: calc(30vh + env(safe-area-inset-bottom));
+  }
+
+  .chat-container {
+    bottom: calc(30vh + env(safe-area-inset-bottom) + 40px);
+    height: 35vh;
+  }
 }
 
 /* Login Styles */
@@ -750,19 +763,19 @@ body {
 /* Chat Component Styles */
 .chat-toggle-btn {
   position: fixed;
-  bottom: calc(10vh + env(safe-area-inset-bottom));
-  right: 20px;
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #00ffff;
+  bottom: calc(22vh + env(safe-area-inset-bottom)); /* Moved higher up to avoid overlap */
+  right: 15px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid #00ffff;
   color: #00ffff;
-  font-family: 'Courier New', Courier, monospace;
-  font-weight: bold;
-  padding: 10px 15px;
+  font-family: 'Courier New', monospace;
+  font-size: 10px;
+  padding: 8px 12px;
   cursor: pointer;
-  z-index: 4000; /* Very high z-index */
-  transition: all 0.3s;
-  box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
-  pointer-events: auto; /* Enable interaction inside hud-overlay */
+  z-index: 2600;
+  pointer-events: auto;
+  border-radius: 4px;
+  box-shadow: 0 0 10px rgba(0, 255, 255, 0.2);
 }
 
 .chat-toggle-btn:hover {
@@ -773,19 +786,19 @@ body {
 
 .chat-container {
   position: fixed;
-  bottom: calc(10vh + env(safe-area-inset-bottom) + 60px);
-  right: 20px;
+  bottom: calc(22vh + env(safe-area-inset-bottom) + 50px); /* Adjust container position too */
+  right: 15px;
   width: clamp(300px, 90vw, 400px);
-  height: 50vh;
-  background: rgba(0, 0, 0, 0.9);
+  height: 40vh; /* Slightly smaller for mobile */
+  background: rgba(0, 0, 0, 0.95);
   border: 2px solid #00ffff;
   border-radius: 5px;
   display: flex;
   flex-direction: column;
-  z-index: 3999; /* High, but below the button */
+  z-index: 3999;
   box-shadow: 0 0 30px rgba(0, 255, 255, 0.2);
   animation: slide-up 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  pointer-events: auto; /* Enable interaction inside hud-overlay */
+  pointer-events: auto;
 }
 
 @keyframes slide-up {
