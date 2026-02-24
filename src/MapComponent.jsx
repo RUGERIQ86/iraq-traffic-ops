@@ -173,6 +173,7 @@ const MapComponent = ({ session }) => {
 
   const [isTracking, setIsTracking] = useState(false);
   const [autoFollow, setAutoFollow] = useState(true); // New state for auto-following
+  const [trackingUnitId, setTrackingUnitId] = useState(null); // ID of the unit currently being followed
   const watchIdRef = useRef(null);
   const hasCenteredMap = useRef(false);
 
@@ -193,6 +194,7 @@ const MapComponent = ({ session }) => {
         // Use the part before @ as the ID for simplicity
         const emailId = session.user.email.split('@')[0].toUpperCase();
         setMyUnitId(emailId);
+        setTrackingUnitId(emailId); // Default to tracking self
     }
   }, [session]);
 
@@ -227,8 +229,8 @@ const MapComponent = ({ session }) => {
             
             setUserLocation(newPos);
             
-            // Auto-follow logic
-            if (autoFollow) {
+            // Auto-follow logic: only if autoFollow is ON AND we are tracking OURSELVES
+            if (autoFollow && trackingUnitId === myUnitId) {
                 setPosition(newPos);
             }
             
@@ -240,7 +242,7 @@ const MapComponent = ({ session }) => {
                 setStatusMsg('TARGET LOCKED');
             } else {
                 setIsOnline(true);
-                if (autoFollow) {
+                if (autoFollow && trackingUnitId === myUnitId) {
                     setStatusMsg(`TRACKING | SPD: ${speed ? Math.round(speed * 3.6) : 0} KM/H`);
                 }
             }
@@ -308,6 +310,15 @@ const MapComponent = ({ session }) => {
   useEffect(() => {
     if (!supabase) return;
 
+    // Auto-follow logic for tracked unit
+    if (autoFollow && trackingUnitId && trackingUnitId !== myUnitId) {
+        const member = squadMembers[trackingUnitId];
+        if (member) {
+            setPosition([member.lat, member.lng]);
+            setStatusMsg(`TRACKING UNIT: ${trackingUnitId}`);
+        }
+    }
+
     // Fetch initial locations of all users
     const fetchInitialLocations = async () => {
         const { data, error } = await supabase
@@ -360,7 +371,7 @@ const MapComponent = ({ session }) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [myUnitId]);
+  }, [myUnitId, trackingUnitId, squadMembers, autoFollow]);
 
   // Generate a consistent neon color for each user
   const getUserColor = (userId) => {
@@ -382,12 +393,13 @@ const MapComponent = ({ session }) => {
   };
 
   const handleLocateMe = () => {
+    setTrackingUnitId(myUnitId); // Switch back to tracking self
     setAutoFollow(true); // Re-enable auto-following
     if (userLocation) {
         setPosition(userLocation);
         setStatusMsg('RE-CENTERING TARGET...');
         setTimeout(() => {
-             setStatusMsg('TRACKING');
+             setStatusMsg('TRACKING SELF');
         }, 1000);
     } else {
         setStatusMsg('SEARCHING FOR SIGNAL...');
@@ -792,7 +804,15 @@ const MapComponent = ({ session }) => {
 
       {/* HUD Interface */}
       <div className="hud-overlay">
-          <div className="top-left">
+          <div className="top-left" 
+               onClick={() => {
+                   setTrackingUnitId(myUnitId);
+                   setAutoFollow(true);
+                   if (userLocation) setPosition(userLocation);
+                   setStatusMsg('TRACKING SELF');
+               }}
+               style={{cursor: 'pointer'}}
+          >
               <div>SYS.OP: {isOnline ? 'ONLINE' : 'OFFLINE'}</div>
               <div>ID: <span style={{color: '#00ff00'}}>{myUnitId}</span></div>
           </div>
@@ -811,24 +831,28 @@ const MapComponent = ({ session }) => {
 
                           return (
                               <div 
-                                  key={id} 
-                                  style={{
-                                      color: userColor, 
-                                      cursor: 'pointer', 
-                                      fontSize: '12px',
-                                      marginBottom: '5px',
-                                      padding: '4px',
-                                      display: 'flex',
-                                      justifyContent: 'space-between',
-                                      alignItems: 'center',
-                                      borderBottom: `1px solid ${userColor}33`, // 20% opacity
-                                      transition: 'background 0.2s'
-                                  }}
-                                  onClick={() => {
-                                      // Fly to member location
-                                      setPosition([m.lat, m.lng]); 
-                                      setStatusMsg(`TRACKING UNIT: ${id}`);
-                                  }}
+                                      key={id} 
+                                      style={{
+                                          color: userColor, 
+                                          cursor: 'pointer', 
+                                          fontSize: '12px',
+                                          marginBottom: '5px',
+                                          padding: '4px',
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                          borderBottom: `1px solid ${userColor}33`, // 20% opacity
+                                          background: trackingUnitId === id ? `${userColor}22` : 'transparent',
+                                          borderRadius: '2px',
+                                          transition: 'background 0.2s'
+                                      }}
+                                      onClick={() => {
+                                          // Fly to member location
+                                          setTrackingUnitId(id);
+                                          setAutoFollow(true);
+                                          setPosition([m.lat, m.lng]); 
+                                          setStatusMsg(`TRACKING UNIT: ${id}`);
+                                      }}
                                   onMouseEnter={(e) => {
                                        e.currentTarget.style.background = `${userColor}22`; // Low opacity background
                                   }}
