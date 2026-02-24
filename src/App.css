@@ -62,17 +62,17 @@
 
 .status-bar {
   position: absolute;
-  bottom: calc(8vh + env(safe-area-inset-bottom)); /* Adjusted for safe area */
+  bottom: calc(12vh + env(safe-area-inset-bottom)); /* Moved higher up (from 8vh to 12vh) */
   left: 0;
   width: 100%;
   text-align: center;
   color: #00ff00;
   font-size: clamp(10px, 2.5vmin, 14px);
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7); /* Slightly darker background */
   padding: 1vh 0;
   pointer-events: none;
   backdrop-filter: blur(2px);
-  z-index: 1500; /* Ensure it's above map but below modal */
+  z-index: 2500; /* Increased z-index to be above toolbar (2000) */
 }
 
 /* Modal Styles */
