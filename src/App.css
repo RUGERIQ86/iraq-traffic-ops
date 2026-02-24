@@ -513,6 +513,7 @@
 /* Fix for POI interactions and Clicking */
 .leaflet-container {
     cursor: grab;
+    z-index: 1;
 }
 
 .leaflet-container.target-mode-active {
@@ -526,6 +527,12 @@
 .leaflet-tile-pane {
     z-index: 200;
     pointer-events: auto !important;
+}
+
+/* Ensure Google layer is at the bottom but interactive */
+.leaflet-google-layer {
+    pointer-events: auto !important;
+    z-index: 100 !important;
 }
 
 .leaflet-map-pane canvas {
@@ -543,11 +550,6 @@
 
 .leaflet-popup-pane {
     z-index: 700;
-}
-
-.leaflet-google-layer {
-    pointer-events: auto !important;
-    z-index: 150;
 }
 
 /* Squad Marker Styles */
@@ -681,6 +683,16 @@ body {
   flex-direction: column;
   justify-content: space-between;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+.top-hud-container, 
+.bottom-toolbar, 
+.status-bar,
+.search-container-hud,
+.squad-list-container,
+.logout-btn,
+.chat-container {
+  pointer-events: auto; /* Re-enable clicks for UI elements */
 }
 
 .top-hud-container {
