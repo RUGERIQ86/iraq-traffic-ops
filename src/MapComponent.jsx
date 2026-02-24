@@ -84,29 +84,26 @@ const TrafficLayer = () => {
   const trafficLayerRef = useRef(null);
 
   useEffect(() => {
-    // GOVERNMENT GRADE INTEGRATION: Waze Live Map as Primary Base Layer
-    // This provides 100% accurate traffic, alerts, and incidents directly from Waze servers
-    const wazeLiveMapUrl = 'https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png';
+    // RESTORING STABLE GOOGLE MAPS INFRASTRUCTURE
+    // Primary Base Map + Integrated Traffic Layer
+    const googleTrafficUrl = 'https://mt{s}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}';
     
-    trafficLayerRef.current = L.tileLayer(wazeLiveMapUrl, {
-      maxZoom: 19,
-      attribution: 'Tactical Traffic Data via Waze Live',
-      // High-performance settings
-      updateWhenIdle: false,
-      updateWhenZooming: true,
-      keepBuffer: 2
+    trafficLayerRef.current = L.tileLayer(googleTrafficUrl, {
+      maxZoom: 20,
+      subdomains: ['0', '1', '2', '3'],
+      attribution: 'Map & Traffic Data by Google'
     }).addTo(map);
 
-    // Auto-refresh logic to force Waze server to push latest traffic updates
+    // Reliable refresh every 60 seconds to keep traffic updated without overloading
     const intervalId = setInterval(() => {
       if (trafficLayerRef.current) {
         const timestamp = new Date().getTime();
-        // Dynamic versioning to bypass any intermediary caching
-        const refreshedUrl = `https://worldtileserver.waze.com/tiles/{z}/{x}/{y}.png?v=8&t=${timestamp}`;
+        const sub = Math.floor(Math.random() * 4);
+        const refreshedUrl = `https://mt${sub}.google.com/vt/lyrs=m,traffic&hl=ar&x={x}&y={y}&z={z}&time=${timestamp}`;
         trafficLayerRef.current.setUrl(refreshedUrl);
-        console.log("TACTICAL REFRESH: Waze Live Data Sync", timestamp);
+        console.log("GOOGLE TRAFFIC SYNC: Data Refresh", timestamp);
       }
-    }, 30000); // 30s interval for government-grade precision
+    }, 60000);
 
     return () => {
       clearInterval(intervalId);
