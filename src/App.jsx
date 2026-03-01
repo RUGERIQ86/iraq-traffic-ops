@@ -1,4 +1,10 @@
-// ... الاستيرادات السابقة تبقى كما هي
+import MapComponent from './MapComponent'
+import Login from './Login'
+import './App.css'
+import useAuthSession from './hooks/useAuthSession'
+import LocationGuard from './LocationGuard'
+// 1. استيراد حاوية الإشعارات
+import { Toaster } from 'react-hot-toast' 
 
 function App() {
   const { session, loading, setSession } = useAuthSession()
@@ -9,21 +15,16 @@ function App() {
 
   return (
     <LocationGuard>
+      {/* 2. إضافة الحاوية هنا لتظهر الإشعارات فوق كل شيء */}
       <Toaster 
         position="top-right" 
         reverseOrder={false} 
-        // التعديل هنا: رفع مستوى الطبقة للحاوية بالكامل
-        containerStyle={{
-          zIndex: 99999, 
-        }}
         toastOptions={{
           style: {
             background: '#000',
             color: '#00ff00',
             border: '1px solid #00ff00',
-            fontFamily: 'monospace',
-            fontSize: '14px',
-            boxShadow: '0 0 15px rgba(0, 255, 0, 0.3)'
+            fontFamily: 'monospace'
           }
         }}
       />
