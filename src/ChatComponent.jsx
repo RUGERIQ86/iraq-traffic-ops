@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
+import toast from 'react-hot-toast';
 
 const ChatComponent = ({ myUnitId, session }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -106,6 +107,26 @@ const ChatComponent = ({ myUnitId, session }) => {
         }
 
         setMessages(prev => [...prev, payload.new]);
+        
+        // Show Toast Notification
+        const { content, unit_id } = payload.new;
+        if (content.includes('[DANGER]')) {
+          toast.error(`DANGER [${unit_id}]: ${content.replace('[DANGER]', '')}`, { duration: 5000 });
+        } else if (content.includes('[WARNING]')) {
+          toast(content.replace('[WARNING]', ''), { 
+            icon: '⚠️', 
+            style: { border: '1px solid orange', color: 'orange', background: '#000' },
+            duration: 4000
+          });
+        } else if (content.includes('[SUCCESS]')) {
+          toast.success(`SUCCESS [${unit_id}]: ${content.replace('[SUCCESS]', '')}`);
+        } else if (!isOpen && unit_id !== myUnitId) {
+          toast(`NEW MESSAGE FROM ${unit_id}`, {
+            icon: '💬',
+            style: { border: '1px solid #00ffff', color: '#00ffff', background: '#000' }
+          });
+        }
+
         if (!isOpen) {
           setHasUnread(true);
         }
@@ -113,7 +134,7 @@ const ChatComponent = ({ myUnitId, session }) => {
       .subscribe((status, err) => {
         if (err) {
             console.error("Chat Subscription Error:", err);
-            alert("Chat Error: Could not connect to real-time chat. Check Supabase connection and RLS.");
+            toast.error("Chat Error: Could not connect to real-time chat. Check Supabase connection and RLS.");
         }
       });
 
@@ -126,7 +147,7 @@ const ChatComponent = ({ myUnitId, session }) => {
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!newMessage.trim() || !myUnitId) {
-        if (!myUnitId) alert("Cannot send message: User ID is not set.");
+        if (!myUnitId) toast.error("Cannot send message: User ID is not set.");
         return;
     }
 
@@ -142,7 +163,7 @@ const ChatComponent = ({ myUnitId, session }) => {
 
     if (error) {
       console.error('Error sending message:', error);
-      alert(`Error sending message: ${error.message}. Check RLS policies.`);
+      toast.error(`Error sending message: ${error.message}. Check RLS policies.`);
     } else {
       setNewMessage('');
     }
@@ -160,7 +181,7 @@ const ChatComponent = ({ myUnitId, session }) => {
 
       if (error) {
           console.error("Admin Clear failed:", error.message);
-          alert("Clear failed: " + error.message);
+          toast.error("Clear failed: " + error.message);
       } else {
           // 2. Send System Marker
           await supabase.from('messages').insert([{
@@ -169,6 +190,7 @@ const ChatComponent = ({ myUnitId, session }) => {
             color: '#ff0000'
           }]);
           setMessages([]);
+          toast.success("SYSTEM: Chat cleared successfully.");
       }
     }
   };
