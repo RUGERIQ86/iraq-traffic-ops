@@ -1078,3 +1078,8 @@ body {
   z-index: 9999;
   text-shadow: 0 0 10px #00ff00;
 }
+/* إجبار الإشعارات على الظهور فوق قائمة الوحدات ACTIVE SQUAD UNITS */
+div[style*="z-index: 9999"], 
+.react-hot-toast-container {
+    z-index: 999999 !important;
+}
