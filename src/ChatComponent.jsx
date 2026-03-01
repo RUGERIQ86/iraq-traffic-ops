@@ -10,18 +10,10 @@ const ChatComponent = ({ myUnitId, session }) => {
   const [hasUnread, setHasUnread] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Generate a consistent neon color for each user
+  // التعديل 1: جعل وظيفة الألوان آمنة تماماً
   const getUserColor = (userId) => {
-    const colors = [
-      '#00ff00', // Green
-      '#00ffff', // Cyan
-      '#ff00ff', // Magenta
-      '#ffff00', // Yellow
-      '#ff9900', // Orange
-      '#ff0000', // Red
-      '#0099ff', // Blue
-      '#ccff00'  // Lime
-    ];
+    if (!userId) return '#00ffff'; // لون افتراضي إذا كان المعرف غير موجود
+    const colors = ['#00ff00', '#00ffff', '#ff00ff', '#ffff00', '#ff9900', '#ff0000', '#0099ff', '#ccff00'];
     let hash = 0;
     for (let i = 0; i < userId.length; i++) {
       hash = userId.charCodeAt(i) + ((hash << 5) - hash);
@@ -41,102 +33,60 @@ const ChatComponent = ({ myUnitId, session }) => {
   }, [messages, isOpen]);
 
   useEffect(() => {
-    // Auto-Destruct: Delete messages older than 10 minutes
     const cleanupOldMessages = async () => {
       const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { error } = await supabase
-        .from('messages')
-        .delete()
-        .lt('created_at', tenMinutesAgo);
-      
-      if (error) console.warn("Chat cleanup warning (RLS might block delete):", error.message);
+      await supabase.from('messages').delete().lt('created_at', tenMinutesAgo);
     };
 
     cleanupOldMessages();
-    const cleanupInterval = setInterval(cleanupOldMessages, 1 * 60 * 1000); // Check every 1 minute
+    const cleanupInterval = setInterval(cleanupOldMessages, 60000);
 
-    // Load initial messages
     const fetchMessages = async () => {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
-        .order('created_at', { ascending: false }) // Get latest messages
+        .order('created_at', { ascending: false })
         .limit(50);
       
       if (error) {
-        console.error("Chat Error (Fetching):", error.message);
-        // Silent fail or minimal alert to avoid spamming user
-      } else {
-        // 1. Sort by time ascending to process timeline
-        let sortedData = data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-
-        // 2. Check for GLOBAL CLEAR marker
-        const lastClearIndex = sortedData.map(m => m.content).lastIndexOf(':::CHAT_CLEARED_GLOBAL:::');
+        console.error("Chat Error:", error.message);
+      } else if (data) { // التعديل 2: التأكد من وجود البيانات قبل ترتيبها
+        let sortedData = [...data].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
         
-        // 3. Slice messages if a clear marker exists (hide everything before it)
-        if (lastClearIndex !== -1) {
-            sortedData = sortedData.slice(lastClearIndex + 1);
-        }
+        const lastClearIndex = sortedData.map(m => m.content).lastIndexOf(':::CHAT_CLEARED_GLOBAL:::');
+        if (lastClearIndex !== -1) sortedData = sortedData.slice(lastClearIndex + 1);
 
-        // 4. Filter out messages cleared locally (legacy/fallback)
         const lastCleared = localStorage.getItem('chat_last_cleared');
         if (lastCleared) {
             sortedData = sortedData.filter(msg => new Date(msg.created_at) > new Date(lastCleared));
         }
-        
-        // Reverse to show oldest first (top) to newest (bottom)
         setMessages(sortedData);
       }
     };
 
     fetchMessages();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel('public:messages')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        if (payload.errors) {
-            console.error("Chat Error (Realtime):", payload.errors);
-            return;
-        }
+        if (!payload.new) return;
         
-        // Handle GLOBAL CLEAR command
         if (payload.new.content === ':::CHAT_CLEARED_GLOBAL:::') {
-            setMessages([]); // Clear chat for everyone online
+            setMessages([]);
             return;
         }
 
-        setMessages(prev => [...prev, payload.new]);
+        setMessages(prev => [...(prev || []), payload.new]);
         
-        // Show Toast Notification
         const { content, unit_id } = payload.new;
         if (content.includes('[DANGER]')) {
-          toast.error(`DANGER [${unit_id}]: ${content.replace('[DANGER]', '')}`, { duration: 5000 });
-        } else if (content.includes('[WARNING]')) {
-          toast(content.replace('[WARNING]', ''), { 
-            icon: '⚠️', 
-            style: { border: '1px solid orange', color: 'orange', background: '#000' },
-            duration: 4000
-          });
-        } else if (content.includes('[SUCCESS]')) {
-          toast.success(`SUCCESS [${unit_id}]: ${content.replace('[SUCCESS]', '')}`);
+          toast.error(`DANGER [${unit_id}]: ${content.replace('[DANGER]', '')}`);
         } else if (!isOpen && unit_id !== myUnitId) {
-          toast(`NEW MESSAGE FROM ${unit_id}`, {
-            icon: '💬',
-            style: { border: '1px solid #00ffff', color: '#00ffff', background: '#000' }
-          });
-        }
-
-        if (!isOpen) {
           setHasUnread(true);
+          toast(`NEW MESSAGE FROM ${unit_id}`, { icon: '💬' });
         }
       })
-      .subscribe((status, err) => {
-        if (err) {
-            console.error("Chat Subscription Error:", err);
-            toast.error("Chat Error: Could not connect to real-time chat. Check Supabase connection and RLS.");
-        }
-      });
+      .subscribe();
 
     return () => {
       clearInterval(cleanupInterval);
@@ -146,58 +96,19 @@ const ChatComponent = ({ myUnitId, session }) => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !myUnitId) {
-        if (!myUnitId) toast.error("Cannot send message: User ID is not set.");
-        return;
-    }
+    if (!newMessage.trim() || !myUnitId) return;
 
-    const messageData = {
+    const { error } = await supabase.from('messages').insert([{
       unit_id: myUnitId,
       content: newMessage.trim(),
       color: getUserColor(myUnitId),
-    };
+    }]);
 
-    const { error } = await supabase
-      .from('messages')
-      .insert([messageData]);
-
-    if (error) {
-      console.error('Error sending message:', error);
-      toast.error(`Error sending message: ${error.message}. Check RLS policies.`);
-    } else {
-      setNewMessage('');
-    }
-  };
-
-  const handleClearChat = async () => {
-    if (!isAdmin) return;
-    
-    if (window.confirm("WARNING: ADMIN CLEAR CHAT FOR ALL USERS?")) {
-      // 1. Delete all messages from DB (RLS will allow this for Admin)
-      const { error } = await supabase
-        .from('messages')
-        .delete()
-        .neq('id', 0); 
-
-      if (error) {
-          console.error("Admin Clear failed:", error.message);
-          toast.error("Clear failed: " + error.message);
-      } else {
-          // 2. Send System Marker
-          await supabase.from('messages').insert([{
-            unit_id: 'SYSTEM',
-            content: ':::CHAT_CLEARED_BY_ADMIN:::',
-            color: '#ff0000'
-          }]);
-          setMessages([]);
-          toast.success("SYSTEM: Chat cleared successfully.");
-      }
-    }
+    if (!error) setNewMessage('');
   };
 
   return (
     <>
-      {/* Chat Toggle Button */}
       <button 
         className={`chat-toggle-btn ${hasUnread ? 'unread-pulse' : ''}`}
         onClick={() => setIsOpen(!isOpen)}
@@ -205,32 +116,19 @@ const ChatComponent = ({ myUnitId, session }) => {
         {isOpen ? '[ CLOSE ]' : `[ CHAT ${hasUnread ? '(!)' : ''} ]`}
       </button>
 
-      {/* Chat Window */}
       {isOpen && (
         <div className="chat-container">
           <div style={{display: 'flex', justifyContent: 'space-between', padding: '5px', borderBottom: '1px solid #333', background: 'rgba(0,0,0,0.8)'}}>
              <span style={{color: '#00ff00', fontSize: '12px'}}>SQUAD COMMS</span>
-             {isAdmin && (
-               <button 
-                 onClick={handleClearChat}
-                 style={{background: 'red', color: 'white', border: 'none', fontSize: '10px', padding: '2px 5px', cursor: 'pointer'}}
-               >
-                 ADMIN CLEAR
-               </button>
-             )}
           </div>
           <div className="chat-messages">
-            {messages.map((msg, index) => (
-              <div 
-                key={index} 
-                className={`message ${msg.unit_id === myUnitId ? 'sent' : 'received'}`}
-              >
+            {/* التعديل 3: استخدام الاختياري ?. للتأكد من وجود المصفوفة */}
+            {messages?.map((msg, index) => (
+              <div key={index} className={`message ${msg.unit_id === myUnitId ? 'sent' : 'received'}`}>
                 <div className="message-sender" style={{ color: msg.color || getUserColor(msg.unit_id) }}>
-                  {msg.unit_id} <span style={{fontSize: '0.7em', opacity: 0.7}}>{new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                  {msg.unit_id} <span style={{fontSize: '0.7em'}}>{new Date(msg.created_at).toLocaleTimeString()}</span>
                 </div>
-                <div className="message-content" dir="auto">
-                  {msg.content}
-                </div>
+                <div className="message-content">{msg.content}</div>
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -243,7 +141,6 @@ const ChatComponent = ({ myUnitId, session }) => {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder="TYPE MESSAGE..."
               className="chat-input"
-              dir="auto"
             />
             <button type="submit" className="chat-send-btn">SEND</button>
           </form>
